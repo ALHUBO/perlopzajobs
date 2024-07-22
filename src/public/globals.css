@@ -1,0 +1,171 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+	font-family: "firacode";
+	src: url("../font/FIRACODE-LIGHT.ttf");
+}
+
+@font-face {
+	font-family: "icons";
+	font-style: normal;
+	font-weight: 200;
+	src: url("../font/icons.woff2") format("woff2");
+}
+
+.icon {
+	font-family: "icons";
+	letter-spacing: normal;
+	text-transform: none;
+	display: inline-block;
+	white-space: nowrap;
+	word-wrap: normal;
+	direction: ltr;
+	-webkit-font-feature-settings: "liga";
+	-webkit-font-smoothing: antialiased;
+}
+.icon-no-fill {
+	font-variation-settings: "FILL" 0, "wght" 300, "GRAD" 0, "opsz" 24;
+}
+.icon-fill {
+	font-variation-settings: "FILL" 1, "wght" 300, "GRAD" 0, "opsz" 24;
+}
+
+.btn {
+	@apply bg-slate-600 dark:bg-slate-100 text-white dark:text-slate-600 px-[2vmin] py-[0.2vmin] mt-[2vmin] block rounded shadow cursor-pointer hover:bg-slate-500 dark:hover:bg-slate-200;
+}
+
+body {
+	@apply bg-slate-100 dark:bg-slate-600 min-h-[100vh] select-none overflow-hidden;
+}
+
+ul {
+	margin: auto;
+	padding: revert;
+	list-style: circle;
+}
+
+*::-webkit-scrollbar {
+	width: 1.5vmin;
+}
+
+/* Track */
+*::-webkit-scrollbar-track {
+	background: #f1f1f1;
+	border-radius: 100vh;
+}
+
+/* Handle */
+*::-webkit-scrollbar-thumb {
+	background: #cadfa1;
+	border-radius: 100vh;
+	cursor: pointer;
+}
+
+/* Handle on hover */
+*::-webkit-scrollbar-thumb:hover {
+	background: #546b25;
+	cursor: pointer;
+}
+
+.loader {
+	width: 50px;
+	aspect-ratio: 1;
+	border-radius: 50%;
+	border: 8px solid #514b82;
+	animation: l20-1 0.8s infinite linear alternate, l20-2 1.6s infinite linear;
+}
+@keyframes l20-1 {
+	0% {
+		clip-path: polygon(
+			50% 50%,
+			0 0,
+			50% 0%,
+			50% 0%,
+			50% 0%,
+			50% 0%,
+			50% 0%
+		);
+	}
+	12.5% {
+		clip-path: polygon(
+			50% 50%,
+			0 0,
+			50% 0%,
+			100% 0%,
+			100% 0%,
+			100% 0%,
+			100% 0%
+		);
+	}
+	25% {
+		clip-path: polygon(
+			50% 50%,
+			0 0,
+			50% 0%,
+			100% 0%,
+			100% 100%,
+			100% 100%,
+			100% 100%
+		);
+	}
+	50% {
+		clip-path: polygon(
+			50% 50%,
+			0 0,
+			50% 0%,
+			100% 0%,
+			100% 100%,
+			50% 100%,
+			0% 100%
+		);
+	}
+	62.5% {
+		clip-path: polygon(
+			50% 50%,
+			100% 0,
+			100% 0%,
+			100% 0%,
+			100% 100%,
+			50% 100%,
+			0% 100%
+		);
+	}
+	75% {
+		clip-path: polygon(
+			50% 50%,
+			100% 100%,
+			100% 100%,
+			100% 100%,
+			100% 100%,
+			50% 100%,
+			0% 100%
+		);
+	}
+	100% {
+		clip-path: polygon(
+			50% 50%,
+			50% 100%,
+			50% 100%,
+			50% 100%,
+			50% 100%,
+			50% 100%,
+			0% 100%
+		);
+	}
+}
+@keyframes l20-2 {
+	0% {
+		transform: scaleY(1) rotate(0deg);
+	}
+	49.99% {
+		transform: scaleY(1) rotate(135deg);
+	}
+	50% {
+		transform: scaleY(-1) rotate(0deg);
+	}
+	100% {
+		transform: scaleY(-1) rotate(-135deg);
+	}
+}

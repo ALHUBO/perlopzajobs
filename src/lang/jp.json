@@ -1,0 +1,11 @@
+{
+	"name": "日本語",
+	"data": {
+		"Status of [globalVal]:": "[globalVal] のステータス:",
+		"Change": "Cambiar",
+		"Test IPC": "Probar IPC",
+		"No message found": "No se encontró mensaje",
+		"Go to next page": "Ir a la siguiente pagina",
+		"Hello World!": "¡Hola Mundo!"
+	}
+}

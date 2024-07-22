@@ -1,0 +1,44 @@
+{
+	"name": "perlopzajobs",
+	"productName": "perlopzajobs",
+	"version": "1.0.0",
+	"description": "My Electron application description",
+	"main": "src/app.js",
+	"scripts": {
+		"next": "next",
+		"build": "next build",
+		"electron": "electron-forge start",
+		"tailwind": "npx tailwindcss -i ./src/public/globals.css -o ./pages/globals.css --watch",
+		"start": "electron-forge start",
+		"package": "electron-forge package",
+		"make": "electron-forge make",
+		"publish": "electron-forge publish",
+		"lint": "echo \"No linting configured\""
+	},
+	"devDependencies": {
+		"@electron-forge/cli": "^7.4.0",
+		"@electron-forge/maker-deb": "^7.4.0",
+		"@electron-forge/maker-rpm": "^7.4.0",
+		"@electron-forge/maker-squirrel": "^7.4.0",
+		"@electron-forge/maker-zip": "^7.4.0",
+		"@electron-forge/plugin-auto-unpack-natives": "^7.4.0",
+		"@electron-forge/plugin-fuses": "^7.4.0",
+		"@electron/fuses": "^1.8.0",
+		"electron": "31.2.1",
+		"tailwindcss": "^3.4.6"
+	},
+	"keywords": [],
+	"author": {
+		"name": "ALHUBO",
+		"email": "ALHUBOPC@gmail.com"
+	},
+	"license": "MIT",
+	"dependencies": {
+		"electron-squirrel-startup": "^1.0.1",
+		"mysql2": "^3.10.3",
+		"next": "^14.2.5",
+		"react": "^18.3.1",
+		"react-dom": "^18.3.1",
+		"sqlite3": "^5.1.7"
+	}
+}

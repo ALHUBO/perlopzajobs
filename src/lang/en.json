@@ -1,0 +1,15 @@
+{
+	"name": "English",
+	"data": {
+		"Status of [globalVal]:": "Status of [globalVal]:",
+		"Hello World!!!": "Hello World!!!",
+		"[globalVal] passed by reference": "[globalVal] passed by reference",
+		"No content": "No content",
+		"New Value of [globalVal]": "New Value of [globalVal]",
+		"Change [globalVal]": "Change [globalVal]",
+		"Methods": "Methods",
+		"Calls": "Calls",
+		"Unanswered": "Unanswered",
+		"Modified from Middleware": "Modified from Middleware"
+	}
+}
