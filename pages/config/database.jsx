@@ -54,17 +54,17 @@ export default function Database({ daemon, setDaemon }) {
 			type: 2,
 			sms: "¡Se guardo la nueva configuarcion!",
 		});
-		setData(
-			(data = {
+		setDaemon({
+			...daemon,
+			data: {
 				ip: datx.IP,
 				port: datx.port,
 				user: datx.user,
 				pass: datx.password,
 				db: datx.database,
 				driver: datx.driver,
-			})
-		);
-		setOldD({ ...data });
+			},
+		});
 		setTimeout(() => {
 			setBackEnd((backend = false));
 			setNotif({
@@ -83,6 +83,16 @@ export default function Database({ daemon, setDaemon }) {
 		if (daemon.db) app.send("db-disconnect", true);
 		else app.send("db-connect", true);
 	};
+
+	useEffect(() => {
+		setData({
+			...daemon.data,
+		});
+
+		setOldD({
+			...daemon.data,
+		});
+	}, [daemon]);
 
 	useEffect(() => {
 		app.on("db-save", (datx) => {

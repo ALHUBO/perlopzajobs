@@ -21,7 +21,10 @@ export default function Layout({ children }) {
 	});
 
 	const [daemon, setDaemon] = useState({
-		db: false,
+		db: {
+			stablished: false,
+			data: { ip: "", port: "", user: "", pass: "", db: "", driver: "" },
+		},
 	});
 
 	const [langs, setLangs] = useState({});
@@ -69,6 +72,10 @@ export default function Layout({ children }) {
 
 	const logOut = () => {
 		setSession("");
+	};
+
+	const loadDataConection = () => {
+		let dbc = localStorage.getItem("config.db");
 	};
 
 	useEffect(() => {
