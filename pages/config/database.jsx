@@ -80,7 +80,7 @@ export default function Database({ daemon, setDaemon }) {
 			return;
 
 		setBackEnd((backend = true));
-		if (daemon.db) app.send("db-disconnect", true);
+		if (daemon.db.stablished) app.send("db-disconnect", true);
 		else app.send("db-connect", true);
 	};
 
@@ -239,12 +239,14 @@ export default function Database({ daemon, setDaemon }) {
 						<div className="flex justify-start items-center gap-2">
 							<div>
 								<span className="font-bold">Status:</span>{" "}
-								{daemon.db ? "Conectado" : "Desconectado"}
+								{daemon.db.stablished
+									? "Conectado"
+									: "Desconectado"}
 							</div>
 							<div
 								className={
 									"w-4 h-4  border-2 rounded-full " +
-									(daemon.db
+									(daemon.db.stablished
 										? "bg-lime-500 border-lime-900"
 										: "bg-red-500 border-red-900")
 								}
@@ -261,7 +263,9 @@ export default function Database({ daemon, setDaemon }) {
 										data.driver == ""
 									}
 								>
-									{daemon.db ? "Desconectar" : "Conectar"}
+									{daemon.db.stablished
+										? "Desconectar"
+										: "Conectar"}
 								</Button>
 							)}
 						</div>
@@ -269,9 +273,13 @@ export default function Database({ daemon, setDaemon }) {
 					<div>
 						<Button
 							onClick={() => {
+								setNotif({
+									...notif,
+									sms: "",
+								});
 								setEditing(true);
 							}}
-							disabled={backend || daemon.db}
+							disabled={backend || daemon.db.stablished}
 						>
 							Configurar
 						</Button>

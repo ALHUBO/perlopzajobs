@@ -10,7 +10,7 @@ import {
 import Icon from "../components/Icon";
 
 export default function Layout({ children }) {
-	const [UI, setUI] = useState({
+	let [UI, setUI] = useState({
 		Lang: "noneLang",
 		Mode: "system",
 		DarkMode: false,
@@ -25,6 +25,13 @@ export default function Layout({ children }) {
 			stablished: false,
 			data: { ip: "", port: "", user: "", pass: "", db: "", driver: "" },
 		},
+	});
+
+	let [ctrl, setCtrl] = useState({
+		codex: null,
+		pass: "",
+		access: false,
+		wait: false,
 	});
 
 	const [langs, setLangs] = useState({});
@@ -66,12 +73,23 @@ export default function Layout({ children }) {
 	}
 
 	const logIn = () => {
-		setSession("hola");
+		if (ctrl.wait) return;
+		if (typeof ctrl.pass != "string" || ctrl.pass == "") return;
+		if (!ctrl.codex) {
+			setCtrl((ctrl = { ...ctrl, wait: true }));
+			app.send("access-create", ctrl.pass);
+		} else {
+			setCtrl((ctrl = { ...ctrl, wait: true }));
+			console.log("antes");
+			console.log(ctrl);
+			app.send("access-enter", ctrl.pass);
+		}
 		return;
 	};
 
 	const logOut = () => {
-		setSession("");
+		setUI((UI = { ...UI, Title: "Ingresa contraseña" }));
+		setCtrl((ctrl = { ...ctrl, access: false }));
 	};
 
 	const loadDataConection = () => {
@@ -92,6 +110,33 @@ export default function Layout({ children }) {
 		});
 
 		app.send("app-screen-size", null);
+
+		app.on("access-exists", (data) => {
+			console.error("exists");
+			if (data) setUI((UI = { ...UI, Title: "Ingresa contraseña" }));
+			else setUI((UI = { ...UI, Title: "Crear una contraseña" }));
+			setCtrl((ctrl = { ...ctrl, codex: data }));
+		});
+		app.send("access-exists", null);
+
+		app.on("access-create", (data) => {
+			console.error("create");
+			setUI((UI = { ...UI, Title: "Ingresa contraseña" }));
+			let pass = ctrl.pass;
+			if (data) {
+				pass = "";
+			}
+			setCtrl((ctrl = { ...ctrl, pass, codex: data, wait: false }));
+		});
+
+		app.on("access-enter", (data) => {
+			console.log("despues");
+			console.log(ctrl);
+			setCtrl(
+				(ctrl = { ...ctrl, pass: ctrl.pass, access: data, wait: false })
+			);
+		});
+
 		let tk = localStorage.getItem("session.tk");
 		if (typeof tk != "string") setSession("");
 		else setSession(tk);
@@ -105,7 +150,7 @@ export default function Layout({ children }) {
 				}
 				style={{
 					height: hbartitle + "px",
-					"-webkit-app-region": "drag",
+					WebkitAppRegion: "drag",
 					gridTemplateColumns: "2fr 3fr 1fr",
 				}}
 			>
@@ -128,7 +173,7 @@ export default function Layout({ children }) {
 							width: hbartitle * 1.4 + "px",
 							height: hbartitle + "px",
 							fontSize: hbartitle + "px",
-							"-webkit-app-region": "no-drag",
+							WebkitAppRegion: "no-drag",
 						}}
 						onClick={() => {
 							app.send("app-minimize", null);
@@ -142,7 +187,7 @@ export default function Layout({ children }) {
 							style={{
 								width: hbartitle * 1.4 + "px",
 								height: hbartitle + "px",
-								"-webkit-app-region": "no-drag",
+								WebkitAppRegion: "no-drag",
 							}}
 							onClick={() => {
 								app.send("app-maximize", !UI.Maximize);
@@ -166,7 +211,7 @@ export default function Layout({ children }) {
 							width: hbartitle * 1.4 + "px",
 							height: hbartitle + "px",
 							fontSize: hbartitle + "px",
-							"-webkit-app-region": "no-drag",
+							WebkitAppRegion: "no-drag",
 						}}
 						onClick={() => {
 							app.send("app-fullscreen", !UI.FullScreen);
@@ -184,7 +229,7 @@ export default function Layout({ children }) {
 							width: hbartitle * 1.4 + "px",
 							height: hbartitle + "px",
 							fontSize: hbartitle + "px",
-							"-webkit-app-region": "no-drag",
+							WebkitAppRegion: "no-drag",
 						}}
 						onClick={() => {
 							app.send("app-exit", null);
@@ -194,68 +239,113 @@ export default function Layout({ children }) {
 					</button>
 				</div>
 			</div>
-			{session === null && (
+			{ctrl.codex === null && (
 				<div
 					className="flex justify-center items-center flex-col gap-12 text-slate-600"
 					style={{ height: "100vh" }}
 				>
-					<div className="flex justify-center items-center gap-1 text-6xl">
-						Cargando sesión
+					<div className="flex justify-center items-center gap-1 text-3xl">
+						Buscando archivo de configuración
 						<Icon id="autorenew" />
 					</div>
 					<div className="loader"></div>
 				</div>
 			)}
 
-			{typeof session == "string" && session == "" && (
+			{typeof ctrl.codex == "boolean" && !ctrl.codex && (
 				<div
 					className="flex justify-center items-center flex-col gap-12 text-slate-600"
 					style={{ height: "100vh" }}
 				>
 					<div className="flex justify-center items-center gap-1 text-4xl">
-						Iniciar Sesión
+						Crear Contraseña
 						<Icon id="badge" />
 					</div>
 					<div>
-						<input type="text" placeholder="usuario" />
+						<input
+							type="password"
+							placeholder="Contraseña"
+							disabled={ctrl.wait}
+							value={ctrl.pass}
+							onChange={(e) => {
+								setCtrl(
+									(ctrl = { ...ctrl, pass: e.target.value })
+								);
+							}}
+						/>
 					</div>
 					<div>
-						<input type="text" placeholder="contraseña" />
-					</div>
-					<div>
-						<button onClick={logIn}>Entrar</button>
+						<button onClick={logIn} disabled={ctrl.wait}>
+							Crear
+						</button>
 					</div>
 				</div>
 			)}
-
-			{typeof session == "string" && session != "" && (
-				<div className="shadow bg-slate-100 dark:bg-slate-700 min-h-[100vh]">
-					<div className="text-[2.5vmin] text-slate-600 dark:text-slate-100 font-bold">
-						Layout parent 📋
-						<span className="text-[1.6vmin] text-white dark:text-slate-800 bg-slate-600 dark:bg-slate-100 px-[1vmin] py-[0.2vmin] shadow rounded font-thin italic ml-[2vmin]">
-							layout/main.jsx
-						</span>
-						<button onClick={logOut}>Log out</button>
-					</div>
-
-					<main
-						className="overflow-x-hidden overflow-y-auto"
-						style={{ height: "calc(100vh - 12.8vmin)" }}
+			{typeof ctrl.codex == "boolean" &&
+				ctrl.codex &&
+				typeof ctrl.access != "string" && (
+					<div
+						className="flex justify-center items-center flex-col gap-12 text-slate-600"
+						style={{ height: "100vh" }}
 					>
-						{childs.map((child, index) =>
-							cloneElement(child, {
-								key: index,
-								daemon,
-								setDaemon,
-								UI,
-								setUI,
-								__,
-								toggleUIMode,
-							})
-						)}
-					</main>
-				</div>
-			)}
+						<div className="flex justify-center items-center gap-1 text-4xl">
+							Desbloquear sistema
+							<Icon id="badge" />
+						</div>
+						<div>
+							<input
+								type="password"
+								placeholder="contraseña"
+								disabled={ctrl.wait}
+								value={ctrl.pass}
+								onChange={(e) => {
+									setCtrl(
+										(ctrl = {
+											...ctrl,
+											pass: e.target.value,
+										})
+									);
+								}}
+							/>
+						</div>
+						<div>
+							<button onClick={logIn} disabled={ctrl.wait}>
+								Entrar
+							</button>
+						</div>
+					</div>
+				)}
+
+			{typeof ctrl.codex == "boolean" &&
+				ctrl.codex &&
+				typeof ctrl.access == "string" && (
+					<div className="shadow bg-slate-100 dark:bg-slate-700 min-h-[100vh]">
+						<div className="text-[2.5vmin] text-slate-600 dark:text-slate-100 font-bold">
+							Layout parent 📋
+							<span className="text-[1.6vmin] text-white dark:text-slate-800 bg-slate-600 dark:bg-slate-100 px-[1vmin] py-[0.2vmin] shadow rounded font-thin italic ml-[2vmin]">
+								layout/main.jsx
+							</span>
+							<button onClick={logOut}>Log out</button>
+						</div>
+
+						<main
+							className="overflow-x-hidden overflow-y-auto"
+							style={{ height: "calc(100vh - 12.8vmin)" }}
+						>
+							{childs.map((child, index) =>
+								cloneElement(child, {
+									key: index,
+									daemon,
+									setDaemon,
+									UI,
+									setUI,
+									__,
+									toggleUIMode,
+								})
+							)}
+						</main>
+					</div>
+				)}
 		</Fragment>
 	);
 }
