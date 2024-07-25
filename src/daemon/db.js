@@ -3,26 +3,30 @@
  * !                          Servidor MySQL
  * !-----------------------------------------------------------------*/
 //import-------------------------> Drivers para conexión
-const db = require("mysql2");
-const sqlite3 = require("sqlite3").verbose();
-
-//import-------------------------> Importación global node
-//var>---------------------------$ Se convierten globales a locales
-//?---Se importan en el punto de entrada app.js
-const path = global.path;
+const db = require("mysql2"),
+	sqlite3 = require("sqlite3").verbose(),
+	path = require("path");
 
 //var>---------------------------$ db execution Globals
-var connection = null; //?---Conexión activa
-var status = "disconnect"; //?---Estatus de conexión [connect | disconnect | error]
-const root = "./ufsys"; //?---Ruta de almacenamiento sqlite
+var connection = null,
+	builded = false,
+	status = "disconnect"; //?---Conexión activa
 
-//var>---------------------------$ callback function connection sqlite
-var onerror = null; //?---Si ocurre un error
-var onend = null; //?---Cuando finaliza la conexión
+//var>---------------------------$ funciones globales
+var onerror = () => {
+		return;
+	}, //?---Si ocurre un error sqlite3
+	onend = () => {
+		return;
+	}, //?---Cuando finaliza la conexión sqlite3
+	on = () => {
+		return;
+	}, //?---Recibe de la GUI
+	send = () => {
+		return;
+	}; //?---Envia al GUI
 
-var on = () => {},
-	send = () => {};
-
+//var>---------------------------$ Datos de conexión
 var dataCnx = {
 	IP: "localhost",
 	port: "3306",
@@ -30,6 +34,20 @@ var dataCnx = {
 	password: "",
 	database: "perlopzajobs",
 	driver: "mysql", //mysql | mariadb | sqlite
+};
+
+const build = ({
+	fnc_on = () => {
+		return;
+	},
+	fnc_send = () => {
+		return;
+	},
+}) => {
+	on = fnc_on;
+	send = fnc_send;
+
+	builded = true;
 };
 
 const dataConnection = ({
@@ -40,9 +58,12 @@ const dataConnection = ({
 	database = "perlopzajobs",
 	driver = "mysql",
 }) => {
-	const expReg = /^([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})$/;
+	if (!builded) return false;
+	const expReg =
+		/^((25[0-5]{1}|2[0-4][0-9]|1[0-9]{2}|[0-9]?[0-9])\.){3}(25[0-5]{1}|2[0-4][0-9]|1[0-9]{2}|[0-9]?[0-9])$/;
 	//$--------------->Si no recibe valores correctos los recetea
-	if (typeof IP != "string" || IP == "") IP = "localhost";
+	if (typeof IP != "string" || (!expReg.test(IP) && IP != "localhost"))
+		IP = "localhost";
 	if ((typeof port != "string" && typeof port != "number") || port == "")
 		port = "3306";
 	if (typeof user != "string" || user == "") user = "root";
@@ -62,6 +83,7 @@ const dataConnection = ({
 		database,
 		driver,
 	};
+	return true;
 };
 
 /**
@@ -99,6 +121,10 @@ function start({
 		return;
 	},
 }) {
+	if (!builded) {
+		console.log("Aún no se ha contruido el deamon");
+		return;
+	}
 	if (connection !== null) {
 		console.log("Ya esta inicada la conexion");
 		return;
@@ -106,17 +132,17 @@ function start({
 	if (dataCnx.driver == "sqlite") {
 		//$--------------->Dependiendo del driver hace la conexión
 		//$--------------->Resuleve la ruta a la base de datos y conecta (si no existe la crea)
-		const dbPath = path.resolve(root, `${dataCnx.database}.sqlite`);
+		const dbPath = path.resolve("./dtx", `${dataCnx.database}.sqlite`);
 		connection = new sqlite3.Database(
 			dbPath,
 			sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE,
 			(err) => {
 				if (err) {
 					//$--------------->Ocurrio un error en la conexión
+					connection = null;
 					status = "error";
 					fnc_processError(err);
 				} else {
-					//$--------------->Se conecto correctamente
 					status = "connect";
 					fnc_success();
 				}
@@ -138,6 +164,7 @@ function start({
 		//$--------------->Intenta conectar al servidor
 		connection.connect(function (error) {
 			if (error) {
+				connection = null;
 				status = "error";
 				fnc_processError(error);
 			} else {
@@ -185,6 +212,10 @@ function close({
 		return;
 	},
 }) {
+	if (!builded) {
+		console.log("Aún no se ha contruido el deamon");
+		return;
+	}
 	if (connection === null) {
 		console.log("No hay conexión activa");
 		return;
@@ -198,12 +229,13 @@ function close({
 					fnc_processError(err);
 				} else {
 					status = "disconnect";
-					connection = null;
 					onend();
 				}
+				connection = null;
 			});
 		} catch (e) {
 			status = "error";
+			connection = null;
 			fnc_error(e);
 		}
 	} else {
@@ -214,9 +246,12 @@ function close({
 					fnc_processError(err);
 					return;
 				}
+				status = "disconnect";
+				connection = null;
 			});
 		} catch (e) {
 			status = "error";
+			connection = null;
 			fnc_error(e);
 		}
 	}
@@ -569,16 +604,11 @@ function AntiInyectionSQL(stm) {
 	return stm;
 }
 
-const callFromGUI = ({
-	o = () => {
+const callFromGUI = () => {
+	if (!builded) {
+		console.log("No se ha construido el daemon");
 		return;
-	},
-	s = () => {
-		return;
-	},
-}) => {
-	on = o;
-	send = s;
+	}
 	on("db-save", (e, data) => {
 		dataConnection({
 			IP: data.ip,
@@ -628,17 +658,8 @@ function getDriver() {
 }
 
 module.exports = {
+	build,
 	callFromGUI,
-	getStatus,
-	getDriver,
-	dump,
-	insert,
-	update,
-	select,
-	del,
-	start,
-	close,
-	query,
 };
 
 // select({

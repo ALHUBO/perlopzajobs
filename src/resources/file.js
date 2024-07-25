@@ -1,11 +1,26 @@
 //import-------------------------> Para manejar archivos
 const fs = require("fs");
-const { parse } = require("path");
 
 //var>---------------------------$ Globales del file.js
 var on = () => {},
 	send = () => {};
-var encrypt = null;
+var builded = false,
+	log = null;
+
+const build = ({
+	fnc_on = () => {
+		return;
+	},
+	fnc_send = () => {
+		return;
+	},
+	req_log = null,
+}) => {
+	on = fnc_on;
+	send = fnc_send;
+	builded = true;
+	log = req_log;
+};
 
 /**
  * %--------------------------------[ parseDir(string):Promise ]
@@ -18,7 +33,11 @@ var encrypt = null;
 const parseDir = (dir) => {
 	if (typeof dir != "string") dir = "";
 
-	dir = dir.replace(/\.\//g, "").replace(/\.\.\//g, "");
+	dir = dir
+		.replace(/\.\//g, "")
+		.replace(/\.\.\//g, "")
+		.replace(/\.\\/g, "")
+		.replace(/\.\.\\/g, "");
 	if (dir[0] == "/" || dir[0] == "\\") dir = dir.substring(1);
 	dir = `./${dir}`;
 	dir = dir.replace(/\/\//g, "/").replace(/\\\\/g, "\\");
@@ -31,11 +50,20 @@ const existsFile = (dir) => {
 		fs.stat(dir, (error, stats) => {
 			if (error) {
 				reject(error);
-				if (error.code === "ENOENT") {
-					console.log("El archivo no existe.");
-				} else {
-					console.error("Error al verificar el archivo:", error);
-				}
+				if (error.code === "ENOENT")
+					log.warning({
+						icon: "draft",
+						title: "File",
+						content: "The file does not exists",
+						advanced: dir,
+					});
+				else
+					log.error({
+						icon: "draft",
+						title: "File",
+						content: "Error searching for file",
+						advanced: error,
+					});
 			} else resolve(stats);
 		});
 	});
@@ -55,6 +83,12 @@ function list(dir) {
 				const root = (dir = parseDir(dir));
 				fs.readdir(root, (error, archivos) => {
 					if (error) {
+						log.error({
+							icon: "folder_open",
+							title: "Directory",
+							content: "Error reading directory contents",
+							advanced: error,
+						});
 						reject(error);
 						return;
 					}
@@ -99,12 +133,23 @@ function list(dir) {
 							resolve(items);
 						})
 						.catch((error) => {
+							log.error({
+								icon: "perm_media",
+								title: "Directory",
+								content: "Error reading content type",
+								advanced: error,
+							});
 							reject(error);
 						});
 				});
 			})
 			.catch((e) => {
-				console.log(e);
+				log.error({
+					icon: "folder_open",
+					title: "Directory",
+					content: "Error reading directory contents",
+					advanced: e,
+				});
 			});
 	});
 }
@@ -128,7 +173,13 @@ function write(dir, name, data) {
 				});
 			})
 			.catch((e) => {
-				console.log(e);
+				log.error({
+					icon: "description",
+					title: "File",
+					content: "Error writing file content",
+					advanced: e,
+				});
+				reject(e);
 			});
 	});
 }
@@ -151,6 +202,12 @@ function read(file) {
 			})
 			.catch((e) => {
 				reject(e);
+				log.error({
+					icon: "description",
+					title: "File",
+					content: "Error reading file content",
+					advanced: e,
+				});
 			});
 	});
 }
@@ -171,23 +228,46 @@ function del(file) {
 					.then((type) => {
 						if (type == 1) {
 							fs.unlink(file, (error) => {
-								if (error) reject(error);
-								else
+								if (error) {
+									reject(error);
+									log.error({
+										icon: "scan_delete",
+										title: "File",
+										content: "Error deleting file",
+										advanced: error,
+									});
+								} else
 									resolve(
 										"Se borro correctamente el archivo"
 									);
 							});
 						} else
-							reject(
-								`No es posible borrar, no es un archivo [${file}]`
-							);
+							log.error({
+								icon: "scan_delete",
+								title: "File",
+								content:
+									"It was not possible to delete because it is not a file",
+								advanced: file,
+							});
 					})
 					.catch((e) => {
 						reject(e);
+						log.error({
+							icon: "scan_delete",
+							title: "File",
+							content: "Error deleting file",
+							advanced: e,
+						});
 					});
 			})
 			.catch((e) => {
 				reject(e);
+				log.error({
+					icon: "scan_delete",
+					title: "File",
+					content: "Error deleting file",
+					advanced: e,
+				});
 			});
 	});
 }
@@ -204,6 +284,13 @@ function itemType(root) {
 		fs.stat(root, (err, stats) => {
 			if (err) {
 				reject(err);
+				log.error({
+					icon: "description",
+					title: "Content",
+					content:
+						"It was not possible to determine the type of content",
+					advanced: err,
+				});
 				return;
 			}
 
@@ -224,14 +311,27 @@ const createDir = (dir) => {
 	dir = parseDir(dir);
 	return new Promise((resolve, reject) => {
 		if (typeof dir != "string" || dir == "") {
-			reject(new Error("No hay directorio para crear."));
+			reject(new Error("No directory name specified."));
+			log.error({
+				icon: "folder",
+				title: "Directory",
+				content: "No directory name specified.",
+				advanced: err,
+			});
 			return;
 		}
 		fs.access(`${dir}`, (error) => {
 			if (error) {
 				fs.mkdir(`${dir}`, { recursive: true }, (err) => {
-					if (err) reject(err);
-					else resolve("Creado!");
+					if (err) {
+						reject(err);
+						log.error({
+							icon: "folder",
+							title: "Directory",
+							content: "The directory could not be created.",
+							advanced: err,
+						});
+					} else resolve("Creado!");
 				});
 			} else resolve("Creado!");
 		});
@@ -242,7 +342,13 @@ const existsDir = (dir) => {
 	dir = parseDir(dir);
 	return new Promise((resolve, reject) => {
 		if (typeof dir != "string" || dir == "") {
-			reject(new Error("No existe el directorio."));
+			reject(new Error("No directory name specified."));
+			log.error({
+				icon: "folder",
+				title: "Directory",
+				content: "No directory name specified.",
+				advanced: err,
+			});
 			return;
 		}
 		fs.access(`${dir}`, (error) => {
@@ -252,105 +358,21 @@ const existsDir = (dir) => {
 	});
 };
 
-const callFromGUI = ({
-	o = () => {
+const callFromGUI = () => {
+	if (!builded) {
+		console.log("The daemon has not been built");
 		return;
-	},
-	s = () => {
-		return;
-	},
-}) => {
-	on = o;
-	send = s;
-	encrypt = global.encrypt;
-	on("access-exists", (e, data) => {
-		existsFile(parseDir("./dtx/access.ahb"))
-			.then(() => {
-				send("access-exists", true);
-			})
-			.catch((e) => {
-				send("access-exists", false);
-			});
-	});
-
-	on("access-create", (e, pass) => {
-		const rgEx = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d\s]).{8,}$/;
-		if (typeof pass != "string" || pass == "" || !rgEx.test(pass)) {
-			send("access-create", false);
-			return;
-		}
-
-		encrypt
-			.genCifer(pass)
-			.then((cifer) => {
-				write("./dtx", "./access.ahb", encrypt.CiferSMS(pass, cifer))
-					.then(() => {
-						send("access-create", true);
-					})
-					.catch((e) => {
-						send("access-create", false);
-					});
-			})
-			.catch((e) => {
-				console.log(e);
-				send("access-create", false);
-			});
-	});
-
-	on("access-enter", (e, pass) => {
-		if (typeof pass != "string" || pass == "") {
-			send("access-enter", false);
-			return;
-		}
-		encrypt
-			.genCifer(pass)
-			.then((cifer) => {
-				read("./dtx/access.ahb")
-					.then((data) => {
-						const sms = global.encrypt.DeciferSMS(data, cifer);
-						if (sms == pass) {
-							const encr = global.encrypt.ASCII2sha256(sms);
-							const d = new Date();
-							// [token_access.t, token_access.s] =
-							// 	global.native.createToken(
-							// 		{
-							// 			hasher: encr,
-							// 			time: `${d.getFullYear()}-${`${
-							// 				d.getMonth() + 1
-							// 			}`.padStart(
-							// 				2,
-							// 				"0"
-							// 			)}-${`${d.getDay()}`.padStart(
-							// 				2,
-							// 				"0"
-							// 			)} ${`${d.getHours()}`.padStart(
-							// 				2,
-							// 				"0"
-							// 			)}:${`${d.getMinutes()}`.padStart(
-							// 				2,
-							// 				"0"
-							// 			)}:${`${d.getSeconds()}`.padStart(2, "0")}`,
-							// 		},
-							// 		86400
-							// 	);
-							send("access-enter", "sdfsdf");
-						} else send("access-enter", false);
-					})
-					.catch(() => {
-						send("access-enter", false);
-					});
-			})
-			.catch((e) => {
-				send("access-enter", false);
-			});
-	});
+	}
 };
 
 //export------------------------> Funciones disponible hacia el exterior
 module.exports = {
+	build,
+	parseDir,
+	existsFile,
+	callFromGUI,
 	list, //?---Lista contenido directorio
 	write, //?---Escribe un archivo texto plano
 	read, //?---Lee archivo texto plano
 	del, //?---Elimina un archivo o directorio
-	callFromGUI,
 };

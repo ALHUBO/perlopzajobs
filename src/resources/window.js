@@ -12,11 +12,11 @@ const { pathToFileURL } = require("url");
 
 if (require("electron-squirrel-startup")) app.quit();
 
-//var>---------------------------$ Globales a locales
-const path = global.path;
-const db = global.db;
+const path = require("path");
+
 //var>---------------------------$ Globales Window
 var winapp = null; //?---Objeto de la Window
+
 var wind = {
 	dimention: {
 		w: 0,
@@ -26,149 +26,6 @@ var wind = {
 	UIMode: "system", //?---Tipo de renderizado [ dark | light | system ]
 }; //?---Propiedades de la Window
 
-//!---------------------------[ Contructor de Window ]---------------------------
-/**
- * %--------------------------------[ createWindow(void):void ]
- * !---No exportado
- * ?---Crea el objeto de la Window y carga su pagina inicial
- * return void
- **/
-function createWindow() {
-	//$-------------------> Crea el objeto Window
-	winapp = new BrowserWindow({
-		width: 800, //?---Ancho inicial
-		height: 600, //?---Alto inicial
-		frame: false, //?---Sin bordes
-		webPreferences: {
-			preload: path.join(__dirname, "middleware.js"), //?---Codigo entre el Back-End y el Front-End
-		},
-	});
-
-	//$-------------------> Peticion inicial para cargar la GUI
-	if (wind.environment == "development") {
-		winapp.loadURL("http://localhost:3000"); //?---localhost next
-		winapp.webContents.openDevTools(); //?---abre las herramientas de desarrollador
-	} else if (wind.environment == "production")
-		winapp.loadURL("app://alhubo/"); //?---Archivo local a la app
-}
-
-/**
- * %--------------------------------[ send(void):void ]
- * !---Exportado
- * ?---Recibe un evento de GUI y ejecuta una funcion que recibe (event,data)
- * @param {string} channel(undefined) Canal de comunicación
- * @param {any} data(undefined) Informacion que se enviará a GUI
- * return void
- **/
-function send(channel, data) {
-	winapp.webContents.send(channel, data);
-}
-
-/**
- * %--------------------------------[ on(void):void ]
- * !---Exportado
- * ?---Recibe un evento de GUI y ejecuta una funcion que recibe (event,data)
- * @param {string} channel(undefined) Canal de comunicación
- * @param {function} fnc(undefined) Funcion a ejecutar fnc(event:string,data:any-<Información recibida de la GUI)
- * return void
- **/
-function on(channel, fnc) {
-	ipcMain.on(channel, fnc);
-}
-
-/**
- * %--------------------------------[ GUI_Call_Window(void):void ]
- * !---No Exportado
- * ?---Asigna eventos que se originan en la GUI y se envian a Window
- * return void
- **/
-function GUI_Call_Window() {
-	//$-----------------------> GUI llama a cerrar la aplicación
-	on("app-exit", (e, data) => {
-		app.quit();
-	});
-
-	//$-----------------------> GUI obtiene ancho y alto de la window
-	on("app-screen-size", (e, data) => {
-		const primaryDisplay = screen.getPrimaryDisplay();
-		const { width, height } = primaryDisplay.workAreaSize;
-		wind.dimention.h = height;
-		wind.dimention.w = width;
-		send("app-screen-size", { width, height });
-	});
-
-	//$-----------------------> GUI llama para maximizar o restaurar window
-	on("app-maximize", (e, data) => {
-		if (data) winapp.maximize();
-		else winapp.unmaximize();
-	});
-
-	//$-----------------------> GUI llama para minimazar window
-	on("app-minimize", (e, data) => {
-		winapp.minimize();
-	});
-
-	//$-----------------------> GUI llama para alternar entre full-screen y normal
-	on("app-fullscreen", (e, data) => {
-		winapp.setFullScreen(data);
-	});
-
-	//$-----------------------> GUI llama para obtener tipo tema actual
-	on("nativetheme-get", (e, data) => {
-		wind.UIMode = data;
-		send("nativetheme-update", {
-			type: wind.UIMode,
-			dark: nativeTheme.shouldUseDarkColors,
-		});
-	});
-}
-
-/**
- * %--------------------------------[ Window_Call_GUI(void):void ]
- * !---No exportado
- * ?---Asigna eventos que se originan en la Window y se envian a GUI
- * return void
- **/
-function Window_Call_GUI() {
-	//$-----------------------> La window envia a la GUI que se maximizo
-	winapp.on("maximize", () => {
-		let wins = winapp.getBounds();
-		wind.dimention.h = wins.height;
-		wind.dimention.w = wins.width;
-		send("app-screen-maximize", true);
-	});
-
-	//$-----------------------> La window envia a la GUI que salio de maximizar
-	winapp.on("unmaximize", () => {
-		send("app-screen-maximize", false);
-	});
-
-	//$-----------------------> La window envia a la GUI que se redimensiono
-	winapp.on("resize", () => {
-		let wins = winapp.getBounds();
-		if (wind.dimention.h > wins.height || wind.dimention.w > wins.width)
-			send("app-screen-maximize", false);
-	});
-
-	//$-----------------------> La window envia a la GUI que entro en full-screen
-	winapp.on("enter-full-screen", () => {
-		send("app-screen-full", true);
-	});
-
-	//$-----------------------> La window envia a la GUI que salio de full-screen
-	winapp.on("leave-full-screen", () => {
-		send("app-screen-full", false);
-	});
-
-	//$-----------------------> La window envia a la GUI que cambio tema
-	nativeTheme.on("updated", () => {
-		send("nativetheme-update", {
-			type: wind.UIMode,
-			dark: nativeTheme.shouldUseDarkColors,
-		});
-	});
-}
-
 /**
  * %--------------------------------[ build(destructured-object):Promise ]
  * !---Exportado
@@ -176,7 +33,7 @@ function Window_Call_GUI() {
  * @param {string} environment("development") Tipo de environment [ development | production ]
  * return Promise->then(flag:object-void-<Success)
  **/
-function build({ environment = "development" }) {
+const build = ({ environment = "development" }) => {
 	return new Promise((resolve, reject) => {
 		try {
 			wind.environment = environment; //?--- Establece el environment
@@ -260,14 +117,15 @@ function build({ environment = "development" }) {
 				createWindow();
 
 				//%------------------------------< Eventos importantes
-				GUI_Call_Window();
-				Window_Call_GUI();
+				listeners();
 
 				//?---On OS X it's common to re-create a window in the app when the
 				//?---dock icon is clicked and there are no other windows open.
 				app.on("activate", () => {
-					if (BrowserWindow.getAllWindows().length === 0)
+					if (BrowserWindow.getAllWindows().length === 0) {
 						createWindow();
+						listeners();
+					}
 				});
 				resolve({});
 			});
@@ -281,11 +139,246 @@ function build({ environment = "development" }) {
 			reject(e);
 		}
 	});
-}
+};
+
+//!---------------------------[ Contructor de Window ]---------------------------
+/**
+ * %--------------------------------[ createWindow(void):void ]
+ * !---No exportado
+ * ?---Crea el objeto de la Window y carga su pagina inicial
+ * return void
+ **/
+const createWindow = () => {
+	//$-------------------> Crea el objeto Window
+	winapp = new BrowserWindow({
+		width: 800, //?---Ancho inicial
+		height: 600, //?---Alto inicial
+		frame: false, //?---Sin bordes
+		webPreferences: {
+			preload: path.join(__dirname, "middleware.js"), //?---Codigo entre el Back-End y el Front-End
+		},
+	});
+};
+
+/**
+ * %--------------------------------[ send(void):void ]
+ * !---Exportado
+ * ?---Recibe un evento de GUI y ejecuta una funcion que recibe (event,data)
+ * @param {string} channel(undefined) Canal de comunicación
+ * @param {any} data(undefined) Informacion que se enviará a GUI
+ * return void
+ **/
+const send = (channel, data) => {
+	winapp.webContents.send(channel, data);
+};
+
+const log = {
+	default: ({
+		icon = "",
+		title = "",
+		content = "",
+		advanced = "",
+		action = "",
+	}) => {
+		winapp.webContents.send("console-log", {
+			type: "default",
+			icon,
+			title,
+			content,
+			advanced,
+			action,
+		});
+	},
+	success: ({
+		icon = "",
+		title = "",
+		content = "",
+		advanced = "",
+		action = "",
+	}) => {
+		winapp.webContents.send("console-log", {
+			type: "success",
+			icon,
+			title,
+			content,
+			advanced,
+			action,
+		});
+	},
+	info: ({
+		icon = "",
+		title = "",
+		content = "",
+		advanced = "",
+		action = "",
+	}) => {
+		winapp.webContents.send("console-log", {
+			type: "info",
+			icon,
+			title,
+			content,
+			advanced,
+			action,
+		});
+	},
+	warning: ({
+		icon = "",
+		title = "",
+		content = "",
+		advanced = "",
+		action = "",
+	}) => {
+		winapp.webContents.send("console-log", {
+			type: "warning",
+			icon,
+			title,
+			content,
+			advanced,
+			action,
+		});
+	},
+	error: ({
+		icon = "",
+		title = "",
+		content = "",
+		advanced = "",
+		action = "",
+	}) => {
+		winapp.webContents.send("console-log", {
+			type: "error",
+			icon,
+			title,
+			content,
+			advanced,
+			action,
+		});
+	},
+};
+
+/**
+ * %--------------------------------[ on(void):void ]
+ * !---Exportado
+ * ?---Recibe un evento de GUI y ejecuta una funcion que recibe (event,data)
+ * @param {string} channel(undefined) Canal de comunicación
+ * @param {function} fnc(undefined) Funcion a ejecutar fnc(event:string,data:any-<Información recibida de la GUI)
+ * return void
+ **/
+const on = (channel, fnc) => {
+	ipcMain.on(channel, fnc);
+};
+
+/**
+ * %--------------------------------[ GUI_Call_Window(void):void ]
+ * !---No Exportado
+ * ?---Asigna eventos que se originan en la GUI y se envian a Window
+ * return void
+ **/
+const GUI_Call_Window = () => {
+	//$-----------------------> GUI llama a cerrar la aplicación
+	on("app-exit", (e, data) => {
+		app.quit();
+	});
+
+	//$-----------------------> GUI obtiene ancho y alto de la window
+	on("app-screen-size", (e, data) => {
+		const primaryDisplay = screen.getPrimaryDisplay();
+		const { width, height } = primaryDisplay.workAreaSize;
+		wind.dimention.h = height;
+		wind.dimention.w = width;
+		send("app-screen-size", { width, height });
+	});
+
+	//$-----------------------> GUI llama para maximizar o restaurar window
+	on("app-maximize", (e, data) => {
+		if (data) winapp.maximize();
+		else winapp.unmaximize();
+	});
+
+	//$-----------------------> GUI llama para minimazar window
+	on("app-minimize", (e, data) => {
+		winapp.minimize();
+	});
+
+	//$-----------------------> GUI llama para alternar entre full-screen y normal
+	on("app-fullscreen", (e, data) => {
+		winapp.setFullScreen(data);
+	});
+
+	//$-----------------------> GUI llama para obtener tipo tema actual
+	on("nativetheme-get", (e, data) => {
+		wind.UIMode = data;
+		send("nativetheme-update", {
+			type: wind.UIMode,
+			dark: nativeTheme.shouldUseDarkColors,
+		});
+	});
+};
+
+/**
+ * %--------------------------------[ Window_Call_GUI(void):void ]
+ * !---No exportado
+ * ?---Asigna eventos que se originan en la Window y se envian a GUI
+ * return void
+ **/
+const Window_Call_GUI = () => {
+	//$-----------------------> La window envia a la GUI que se maximizo
+	winapp.on("maximize", () => {
+		let wins = winapp.getBounds();
+		wind.dimention.h = wins.height;
+		wind.dimention.w = wins.width;
+		send("app-screen-maximize", true);
+	});
+
+	//$-----------------------> La window envia a la GUI que salio de maximizar
+	winapp.on("unmaximize", () => {
+		send("app-screen-maximize", false);
+	});
+
+	//$-----------------------> La window envia a la GUI que se redimensiono
+	winapp.on("resize", () => {
+		let wins = winapp.getBounds();
+		if (wind.dimention.h > wins.height || wind.dimention.w > wins.width)
+			send("app-screen-maximize", false);
+	});
+
+	//$-----------------------> La window envia a la GUI que entro en full-screen
+	winapp.on("enter-full-screen", () => {
+		send("app-screen-full", true);
+	});
+
+	//$-----------------------> La window envia a la GUI que salio de full-screen
+	winapp.on("leave-full-screen", () => {
+		send("app-screen-full", false);
+	});
+
+	//$-----------------------> La window envia a la GUI que cambio tema
+	nativeTheme.on("updated", () => {
+		send("nativetheme-update", {
+			type: wind.UIMode,
+			dark: nativeTheme.shouldUseDarkColors,
+		});
+	});
+};
+
+const listeners = () => {
+	GUI_Call_Window();
+	Window_Call_GUI();
+};
+
+const load = () => {
+	//$-------------------> Peticion inicial para cargar la GUI
+	if (wind.environment == "development") {
+		winapp.loadURL("http://localhost:3000"); //?---localhost next
+		winapp.webContents.openDevTools(); //?---abre las herramientas de desarrollador
+	} else if (wind.environment == "production")
+		winapp.loadURL("app://alhubo/"); //?---Archivo local a la app
+};
 
 //export------------------------> Funciones disponible hacia el exterior
 module.exports = {
 	build, //?---Contruye la Window de la aplicación
 	send, //?---Envia información a la GUI
+	log,
 	on, //?---Recibe información de la GUI
+	load, //?---Carga la GUI
 };
