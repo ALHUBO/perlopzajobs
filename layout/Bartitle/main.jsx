@@ -3,7 +3,6 @@ import Icon from "../../components/Icon";
 
 export default function Bartitle({ height = 0, frontEnd, setFrontEnd }) {
 	useEffect(() => {
-		app.send("app-fullscreen", frontEnd.screen.full);
 		if (frontEnd.theme.dark) document.body.classList.add("dark");
 		else document.body.classList.remove("dark");
 	}, [frontEnd]);
@@ -15,6 +14,20 @@ export default function Bartitle({ height = 0, frontEnd, setFrontEnd }) {
 			frontEnd.screen.hbartitle = frontEnd.screen.height * 0.04;
 			setFrontEnd(frontEnd);
 		});
+		app.on("app-screen-maximize", (data) => {
+			frontEnd.screen.maximize = data;
+			setFrontEnd({ ...frontEnd });
+		});
+		app.on("app-screen-full", (data) => {
+			frontEnd.screen.full = data;
+			setFrontEnd({ ...frontEnd });
+		});
+		app.on("nativetheme-update", (data) => {
+			frontEnd.theme.mode = data.type;
+			frontEnd.theme.dark = data.dark;
+			setFrontEnd({ ...frontEnd });
+		});
+
 		app.send("app-screen-size", null);
 	}, []);
 	return (

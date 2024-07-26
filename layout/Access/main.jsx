@@ -1,35 +1,43 @@
 import { useEffect, useState } from "react";
-import Icon from "../components/Icon";
+import Icon from "../../components/Icon";
 
-export default function Access({ ctrl, setCtrl, UI, setUI }) {
+export default function Access({
+	canAccess,
+	frontEnd,
+	setFrontEnd,
+	backEnd,
+	setBackEnd,
+}) {
 	const [notf, setNotf] = useState({
 		type: 0,
 		sms: "",
 		ico: "",
 	});
 	const logIn = () => {
+		notf.sms = "";
 		setNotf({
-			type: 0,
-			sms: "",
-			ico: "key",
+			...notf,
 		});
-		if (ctrl.wait) return;
-		if (typeof ctrl.pass != "string" || ctrl.pass == "") return;
-		if (!ctrl.codex) {
-			setCtrl((ctrl = { ...ctrl, wait: true }));
-			app.send("access-create", ctrl.pass);
-		} else {
-			setCtrl((ctrl = { ...ctrl, wait: true }));
-			app.send("access-enter", ctrl.pass);
-		}
-		return;
+		if (backEnd.access.wait) return false;
+		if (typeof backEnd.access.pass != "string" || backEnd.access.pass == "")
+			return false;
+
+		backEnd.access.wait = true;
+		setBackEnd({ ...backEnd });
+		if (!backEnd.access.exists)
+			app.send("access-create", backEnd.access.pass);
+		else app.send("access-enter", backEnd.access.pass);
+
+		return true;
 	};
 
 	useEffect(() => {
 		app.on("access-exists", (data) => {
-			if (data) setUI((UI = { ...UI, Title: "Ingresa contraseña" }));
-			else setUI((UI = { ...UI, Title: "Crear una contraseña" }));
-			setCtrl((ctrl = { ...ctrl, codex: data }));
+			if (data) frontEnd.title = "Ingresa contraseña";
+			else frontEnd.title = "Crear una contraseña";
+			backEnd.access.exists = data;
+			setFrontEnd({ ...frontEnd });
+			setBackEnd({ ...backEnd });
 		});
 		app.on("access-create", (data) => {
 			let error = "";
@@ -46,12 +54,8 @@ export default function Access({ ctrl, setCtrl, UI, setUI }) {
 					sms: error,
 					ico: "key",
 				});
-				setCtrl(
-					(ctrl = {
-						...ctrl,
-						wait: false,
-					})
-				);
+				backEnd.access.wait = false;
+				setBackEnd({ ...backEnd });
 			} else {
 				setNotf({
 					type: 0,
@@ -59,25 +63,19 @@ export default function Access({ ctrl, setCtrl, UI, setUI }) {
 					ico: "key",
 				});
 				setTimeout(() => {
+					notf.sms = "";
 					setNotf({
-						type: 0,
-						sms: "",
-						ico: "key",
+						...notf,
 					});
-					setUI((UI = { ...UI, Title: "Ingresa contraseña" }));
-					setCtrl(
-						(ctrl = {
-							...ctrl,
-							pass: data ? "" : ctrl.pass,
-							codex: true,
-							wait: false,
-						})
-					);
+					frontEnd.title = "Ingresa contraseña";
+					setFrontEnd({ ...frontEnd });
+					backEnd.access.wait = false;
+					if (data.error == 0) backEnd.access.pass = "";
+					setBackEnd({ ...backEnd });
 				}, 2000);
 			}
 		});
 		app.on("access-enter", (data) => {
-			console.log(data);
 			let error = "";
 			if (data.error == 1)
 				error = "No se ingresó una contraseña correctamente.";
@@ -94,14 +92,9 @@ export default function Access({ ctrl, setCtrl, UI, setUI }) {
 					ico: "key",
 				});
 
-				setCtrl(
-					(ctrl = {
-						...ctrl,
-						access: false,
-						wait: false,
-					})
-				);
-				console.log(ctrl);
+				backEnd.access.wait = false;
+				backEnd.access.can = false;
+				setBackEnd({ ...backEnd });
 			} else {
 				setNotf({
 					type: 0,
@@ -109,18 +102,15 @@ export default function Access({ ctrl, setCtrl, UI, setUI }) {
 					ico: "key",
 				});
 				setTimeout(() => {
+					notf.sms = "";
 					setNotf({
-						type: 0,
-						sms: "",
-						ico: "key",
+						...notf,
 					});
-					setCtrl(
-						(ctrl = {
-							...ctrl,
-							access: "asdasd",
-							wait: false,
-						})
-					);
+
+					backEnd.access.can = "asdasd";
+					backEnd.access.wait = false;
+					backEnd.access.pass = "";
+					setBackEnd({ ...backEnd });
 				}, 1000);
 			}
 		});
@@ -129,7 +119,7 @@ export default function Access({ ctrl, setCtrl, UI, setUI }) {
 	}, []);
 	return (
 		<>
-			{ctrl.codex === null && (
+			{canAccess() == 3 && (
 				<div
 					className="flex justify-center items-center flex-col gap-12 text-slate-600"
 					style={{ height: "100vh" }}
@@ -141,7 +131,7 @@ export default function Access({ ctrl, setCtrl, UI, setUI }) {
 					<div className="loader"></div>
 				</div>
 			)}
-			{typeof ctrl.codex == "boolean" && !ctrl.codex && (
+			{canAccess() == 2 && (
 				<div
 					className="flex justify-center items-center flex-col gap-12 text-slate-600"
 					style={{ height: "100vh" }}
@@ -154,58 +144,51 @@ export default function Access({ ctrl, setCtrl, UI, setUI }) {
 						<input
 							type="password"
 							placeholder="Contraseña"
-							disabled={ctrl.wait}
-							value={ctrl.pass}
+							disabled={backEnd.access.wait}
+							value={backEnd.access.pass}
 							onChange={(e) => {
-								setCtrl(
-									(ctrl = { ...ctrl, pass: e.target.value })
-								);
+								backEnd.access.pass = e.target.value;
+								setBackEnd({ ...backEnd });
 							}}
 						/>
 					</div>
 					{notf.sms != "" && <div>{notf.sms}</div>}
 					<div>
-						<button onClick={logIn} disabled={ctrl.wait}>
+						<button onClick={logIn} disabled={backEnd.access.wait}>
 							Crear
 						</button>
 					</div>
 				</div>
 			)}
-			{typeof ctrl.codex == "boolean" &&
-				ctrl.codex &&
-				typeof ctrl.access != "string" && (
-					<div
-						className="flex justify-center items-center flex-col gap-12 text-slate-600"
-						style={{ height: "100vh" }}
-					>
-						<div className="flex justify-center items-center gap-1 text-4xl">
-							Desbloquear sistema
-							<Icon id="badge" />
-						</div>
-						<div>
-							<input
-								type="password"
-								placeholder="contraseña"
-								disabled={ctrl.wait}
-								value={ctrl.pass}
-								onChange={(e) => {
-									setCtrl(
-										(ctrl = {
-											...ctrl,
-											pass: e.target.value,
-										})
-									);
-								}}
-							/>
-						</div>
-						{notf.sms != "" && <div>{notf.sms}</div>}
-						<div>
-							<button onClick={logIn} disabled={ctrl.wait}>
-								Entrar
-							</button>
-						</div>
+			{canAccess() == 1 && (
+				<div
+					className="flex justify-center items-center flex-col gap-12 text-slate-600"
+					style={{ height: "100vh" }}
+				>
+					<div className="flex justify-center items-center gap-1 text-4xl">
+						Desbloquear sistema
+						<Icon id="badge" />
 					</div>
-				)}
+					<div>
+						<input
+							type="password"
+							placeholder="contraseña"
+							disabled={backEnd.access.wait}
+							value={backEnd.access.pass}
+							onChange={(e) => {
+								backEnd.access.pass = e.target.value;
+								setBackEnd({ ...backEnd });
+							}}
+						/>
+					</div>
+					{notf.sms != "" && <div>{notf.sms}</div>}
+					<div>
+						<button onClick={logIn} disabled={backEnd.access.wait}>
+							Entrar
+						</button>
+					</div>
+				</div>
+			)}
 		</>
 	);
 }
