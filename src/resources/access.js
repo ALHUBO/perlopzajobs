@@ -1,10 +1,11 @@
-//var>---------------------------$ Globales del file.js
-var on = () => {},
-	send = () => {};
-var builded = false,
-	encrypt = null,
-	file = null,
-	log = null;
+//var>---------------------------$ Globales del access.js
+var on = () => {}, //?---Given from DOM
+	send = () => {}; //?---Send to DOM
+
+var builded = false, //?---Se contruyo el rekiem
+	encrypt = null, //?---Rekiem externo
+	file = null, //?---Rekiem externo
+	log = null; //?---Rekiem externo
 
 const build = ({
 	fnc_on = () => {

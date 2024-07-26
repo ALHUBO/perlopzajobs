@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Icon from "../../components/Icon";
 import Log from "./component/log";
+import native from "../../src/resources/native";
 
 export default function Console({
 	hbartitle = 0,
@@ -10,6 +11,20 @@ export default function Console({
 	open,
 	setOpen,
 }) {
+	useEffect(() => {
+		useEffect(() => {
+			app.on("console-log", (data) => {
+				frontEnd.console.content[
+					Object.keys(frontEnd.console.content).length
+				] = {
+					...data,
+					date: native.timestamp(),
+				};
+				if (!frontEnd.console.open) frontEnd.console.noview++;
+				setFrontEnd(frontEnd);
+			});
+		}, []);
+	}, []);
 	return (
 		<div
 			className="fixed bottom-0 left-0 z-[1000] w-full bg-slate-50 border-t-2 border-t-slate-300 flex flex-col duration-300 "

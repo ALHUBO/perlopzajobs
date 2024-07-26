@@ -1,4 +1,22 @@
-export default function Bartitle({ height }) {
+import { useEffect } from "react";
+import Icon from "../../components/Icon";
+
+export default function Bartitle({ height = 0, frontEnd, setFrontEnd }) {
+	useEffect(() => {
+		app.send("app-fullscreen", frontEnd.screen.full);
+		if (frontEnd.theme.dark) document.body.classList.add("dark");
+		else document.body.classList.remove("dark");
+	}, [frontEnd]);
+
+	useEffect(() => {
+		app.on("app-screen-size", (data) => {
+			frontEnd.screen.width = data.width;
+			frontEnd.screen.height = data.height;
+			frontEnd.screen.hbartitle = frontEnd.screen.height * 0.04;
+			setFrontEnd(frontEnd);
+		});
+		app.send("app-screen-size", null);
+	}, []);
 	return (
 		<div
 			className={"w-[100vw] bg-slate-700 z-[1000] grid text-slate-100"}

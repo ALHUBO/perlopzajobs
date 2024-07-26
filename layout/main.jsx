@@ -7,10 +7,9 @@ import {
 	Children,
 	isValidElement,
 } from "react";
-import Icon from "../components/Icon";
 import Access from "./access";
 import Console from "./Console/Main";
-import native from "../src/resources/native";
+import Bartitle from "./Bartitle/main";
 
 export default function Layout({ children }) {
 	const childs = Children.toArray(children).filter((child) =>
@@ -89,37 +88,16 @@ export default function Layout({ children }) {
 		let dbc = localStorage.getItem("config.db");
 	};
 
-	useEffect(() => {
-		app.send("app-fullscreen", frontEnd.screen.full);
-		if (frontEnd.theme.dark) document.body.classList.add("dark");
-		else document.body.classList.remove("dark");
-	}, [frontEnd]);
-
 	//!---------------------------[ Despues de cargar el DOM ]------------------------------
-	useEffect(() => {
-		app.on("app-screen-size", (data) => {
-			frontEnd.screen.width = data.width;
-			frontEnd.screen.height = data.height;
-			frontEnd.screen.hbartitle = frontEnd.screen.height * 0.04;
-			setFrontEnd(frontEnd);
-		});
-
-		app.on("console-log", (data) => {
-			frontEnd.console.content[
-				Object.keys(frontEnd.console.content).length
-			] = {
-				...data,
-				date: native.timestamp(),
-			};
-			if (!frontEnd.console.open) frontEnd.console.noview++;
-			setFrontEnd(frontEnd);
-		});
-
-		app.send("app-screen-size", null);
-	}, []);
+	useEffect(() => {}, []);
 
 	return (
 		<Fragment>
+			<Bartitle
+				height={frontEnd.screen.hbartitle}
+				frontEnd={frontEnd}
+				setFrontEnd={setFrontEnd}
+			/>
 			<Access
 				frontEnd={frontEnd}
 				setFrontEnd={setFrontEnd}
