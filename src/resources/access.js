@@ -42,7 +42,8 @@ const callFromGUI = () => {
 	});
 
 	on("access-create", (e, pass) => {
-		const rgEx = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d\s]).{8,}$/;
+		const rgEx =
+			/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d\s]).{12,}$/;
 		if (typeof pass != "string" || pass == "" || !rgEx.test(pass)) {
 			log.error({
 				icon: "key",
@@ -116,16 +117,27 @@ const callFromGUI = () => {
 					.then((data) => {
 						const sms = encrypt.DeciferSMS(data, cifer);
 						if (sms == pass) {
+							log.success({
+								icon: "key",
+								title: "Access",
+								content: "Logged into the system.",
+							});
 							send("access-enter", {
 								error: 0,
 								sms: "was entered correctly.",
 								data: "asdasdasd",
 							});
-						} else
+						} else {
+							log.error({
+								icon: "key",
+								title: "Access",
+								content: "A failed login attempt occurred.",
+							});
 							send("access-enter", {
 								error: 2,
 								sms: "The password is not correct.",
 							});
+						}
 					})
 					.catch((e) => {
 						log.error({

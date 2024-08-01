@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import Icon from "../../components/Icon";
+import Link from "next/link";
 
 export default function Bartitle({ height = 0, frontEnd, setFrontEnd }) {
 	useEffect(() => {
@@ -39,7 +40,26 @@ export default function Bartitle({ height = 0, frontEnd, setFrontEnd }) {
 				gridTemplateColumns: "2fr 3fr 1fr",
 			}}
 		>
-			<div></div>
+			<div
+				className="flex justify-start items-center overflow-ellipsis pl-2 gap-2"
+				style={{
+					WebkitAppRegion: "no-drag",
+				}}
+			>
+				<Link
+					href="/"
+					className="flex justify-center items-center gap-1 duration-200 hover:bg-white/25 cursor-pointer px-1 rounded-lg"
+					style={{ fontSize: `${frontEnd.screen.hbartitle * 0.5}px` }}
+				>
+					<Icon id="home" /> Inicio
+				</Link>
+				<div
+					className="flex justify-center items-center gap-1 duration-200 hover:bg-white/25 cursor-pointer px-1 rounded-lg"
+					style={{ fontSize: `${frontEnd.screen.hbartitle * 0.5}px` }}
+				>
+					<Icon id="settings" /> Ajustes
+				</div>
+			</div>
 			<div className="flex items-center justify-center">
 				<div
 					className="flex items-center justify-center border-[0.2vmin] w-[100%] rounded overflow-hidden text-ellipsis"

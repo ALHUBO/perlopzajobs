@@ -312,6 +312,22 @@ const GUI_Call_Window = () => {
 			dark: nativeTheme.shouldUseDarkColors,
 		});
 	});
+
+	on("log-default", (e, data) => {
+		log.default(data);
+	});
+	on("log-info", (e, data) => {
+		log.info(data);
+	});
+	on("log-error", (e, data) => {
+		log.error(data);
+	});
+	on("log-success", (e, data) => {
+		log.success(data);
+	});
+	on("log-warning", (e, data) => {
+		log.warning(data);
+	});
 };
 
 /**

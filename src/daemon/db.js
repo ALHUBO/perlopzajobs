@@ -28,11 +28,13 @@ var onerror = () => {
 
 //var>---------------------------$ Datos de conexión
 var dataCnx = {
-	IP: "localhost",
-	port: "3306",
-	user: "root",
-	password: "",
-	database: "perlopzajobs",
+	socket: {
+		host: "localhost",
+		port: "3306",
+		user: "root",
+		password: "",
+		database: "perlopzajobs",
+	},
 	driver: "mysql", //mysql | mariadb | sqlite
 };
 
@@ -51,7 +53,7 @@ const build = ({
 };
 
 const dataConnection = ({
-	IP = "localhost",
+	host = "localhost",
 	port = "3306",
 	user = "root",
 	password = "",
@@ -62,25 +64,27 @@ const dataConnection = ({
 	const expReg =
 		/^((25[0-5]{1}|2[0-4][0-9]|1[0-9]{2}|[0-9]?[0-9])\.){3}(25[0-5]{1}|2[0-4][0-9]|1[0-9]{2}|[0-9]?[0-9])$/;
 	//$--------------->Si no recibe valores correctos los recetea
-	if (typeof IP != "string" || (!expReg.test(IP) && IP != "localhost"))
-		IP = "localhost";
+	if (typeof host != "string" || (!expReg.test(host) && host != "localhost"))
+		host = "localhost";
 	if ((typeof port != "string" && typeof port != "number") || port == "")
 		port = "3306";
 	if (typeof user != "string" || user == "") user = "root";
 	if (typeof password != "string") password = "";
 	if (typeof database != "string" || database == "")
-		database = "ALHUBOServer";
+		database = "perlopzajobs";
 	if (
 		typeof driver != "string" ||
 		(driver != "mysql" && driver != "mariadb" && driver != "sqlite")
 	)
 		driver = "mysql";
 	dataCnx = {
-		IP,
-		port,
-		user,
-		password,
-		database,
+		socket: {
+			host,
+			port,
+			user,
+			password,
+			database,
+		},
 		driver,
 	};
 	return true;
@@ -89,11 +93,11 @@ const dataConnection = ({
 /**
  * %--------------------------------[ start(destructured-object):void ]
  * ?---Crea la conexión a la base de datos dependiendo del driver
- * @param {string} IP("localhost") ip del servidor en caso de que driver sea [mysql | mariadb]
+ * @param {string} host("localhost") ip del servidor en caso de que driver sea [mysql | mariadb]
  * @param {string} port("3306") puerto del servidor en caso de que driver sea [mysql | mariadb]
  * @param {string} user("root") usuario de acceso al servidor en caso de que driver sea [mysql | mariadb]
  * @param {string} password("") contraseña del usuario en caso de que driver sea [mysql | mariadb]
- * @param {string} database("ALHUBOServer") nombre de la base de datos
+ * @param {string} database("perlopzajobs") nombre de la base de datos
  * @param {string} driver("mysql") driver para conexión [mysql | mariadb | sqlite]
  * @param {function} fnc_success(():void) función callback si se realizó la conexión
  * @param {function} fnc_processError(():void) función callback si ocurrio un error en la conexión
@@ -122,17 +126,28 @@ function start({
 	},
 }) {
 	if (!builded) {
-		console.log("Aún no se ha contruido el deamon");
+		log.error({
+			icon: "database",
+			title: "Data Base",
+			content: "Aún no se ha contruido el deamon.",
+		});
 		return;
 	}
 	if (connection !== null) {
-		console.log("Ya esta inicada la conexion");
+		log.warning({
+			icon: "database",
+			title: "Data Base",
+			content: "Ya esta inicada la conexion.",
+		});
 		return;
 	}
 	if (dataCnx.driver == "sqlite") {
 		//$--------------->Dependiendo del driver hace la conexión
 		//$--------------->Resuleve la ruta a la base de datos y conecta (si no existe la crea)
-		const dbPath = path.resolve("./dtx", `${dataCnx.database}.sqlite`);
+		const dbPath = path.resolve(
+			"./dtx",
+			`${dataCnx.socket.database}.sqlite`
+		);
 		connection = new sqlite3.Database(
 			dbPath,
 			sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE,
@@ -153,13 +168,7 @@ function start({
 		onend = fnc_close; //$--------------->Guarda el callback close
 	} else {
 		//$--------------->Crea conexión al servidor
-		connection = db.createConnection({
-			host: dataCnx.IP,
-			port: dataCnx.port,
-			user: dataCnx.user,
-			password: dataCnx.password,
-			database: dataCnx.database,
-		});
+		connection = db.createConnection({ ...dataCnx.socket });
 
 		//$--------------->Intenta conectar al servidor
 		connection.connect(function (error) {
@@ -213,11 +222,19 @@ function close({
 	},
 }) {
 	if (!builded) {
-		console.log("Aún no se ha contruido el deamon");
+		log.error({
+			icon: "database",
+			title: "Data Base",
+			content: "Aún no se ha contruido el deamon.",
+		});
 		return;
 	}
 	if (connection === null) {
-		console.log("No hay conexión activa");
+		log.warning({
+			icon: "database",
+			title: "Data Base",
+			content: "No hay conexión activa.",
+		});
 		return;
 	}
 	//$---------------> Elige el Driver e intenta terminar conexión
@@ -611,14 +628,9 @@ const callFromGUI = () => {
 	}
 	on("db-save", (e, data) => {
 		dataConnection({
-			IP: data.ip,
-			port: data.port,
-			user: data.user,
-			password: data.pass,
-			database: data.db,
-			driver: data.driver,
+			...data,
 		});
-		send("db-save", dataCnx);
+		send("db-save", { ...dataCnx.socket, driver: dataCnx.driver });
 	});
 
 	on("db-connect", (e, data) => {
@@ -647,15 +659,15 @@ const callFromGUI = () => {
 			},
 		});
 	});
+
+	on("db-is-connect", (e, data) => {
+		send("db-is-connect", connection !== null);
+	});
+
+	on("db-data", (e, data) => {
+		send("db-data", { ...dataCnx.socket, driver: dataCnx.driver });
+	});
 };
-
-function getStatus() {
-	return status;
-}
-
-function getDriver() {
-	return dvrx;
-}
 
 module.exports = {
 	build,

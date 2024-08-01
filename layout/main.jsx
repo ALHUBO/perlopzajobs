@@ -98,7 +98,31 @@ export default function Layout({ children }) {
 	};
 
 	//!---------------------------[ Despues de cargar el DOM ]------------------------------
-	useEffect(() => {}, []);
+	useEffect(() => {
+		app.on("db-is-connect", (response) => {
+			backEnd.db.stablished = response;
+			setBackEnd({
+				...backEnd,
+			});
+		});
+
+		app.on("db-data", (response) => {
+			backEnd.db.data = {
+				ip: response.host,
+				port: response.port,
+				user: response.user,
+				pass: response.password,
+				db: response.database,
+				driver: response.driver,
+			};
+			setBackEnd({
+				...backEnd,
+			});
+			app.send("db-is-connect", null);
+		});
+
+		app.send("db-data", null);
+	}, []);
 
 	return (
 		<Fragment>
