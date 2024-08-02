@@ -8,6 +8,7 @@ export default function Access({
 	backEnd,
 	setBackEnd,
 }) {
+	let [showPass, setShowPass] = useState(false);
 	const [notf, setNotf] = useState({
 		type: 0,
 		sms: "",
@@ -142,7 +143,7 @@ export default function Access({
 					</div>
 					<div>
 						<input
-							type="password"
+							type={showPass ? "text" : "password"}
 							placeholder="Contraseña"
 							disabled={backEnd.access.wait}
 							value={backEnd.access.pass}
@@ -150,7 +151,19 @@ export default function Access({
 								backEnd.access.pass = e.target.value;
 								setBackEnd({ ...backEnd });
 							}}
+							onKeyUp={(e) => {
+								if (e.code == "Enter") logIn();
+							}}
 						/>
+						<button
+							onClick={() => {
+								setShowPass((showPass = !showPass));
+							}}
+						>
+							<Icon
+								id={showPass ? "visibility" : "visibility_off"}
+							/>
+						</button>
 					</div>
 					{notf.sms != "" && <div>{notf.sms}</div>}
 					<div>
@@ -171,7 +184,7 @@ export default function Access({
 					</div>
 					<div>
 						<input
-							type="password"
+							type={showPass ? "text" : "password"}
 							placeholder="contraseña"
 							disabled={backEnd.access.wait}
 							value={backEnd.access.pass}
@@ -179,7 +192,19 @@ export default function Access({
 								backEnd.access.pass = e.target.value;
 								setBackEnd({ ...backEnd });
 							}}
+							onKeyUp={(e) => {
+								if (e.code == "Enter") logIn();
+							}}
 						/>
+						<button
+							onClick={() => {
+								setShowPass((showPass = !showPass));
+							}}
+						>
+							<Icon
+								id={showPass ? "visibility" : "visibility_off"}
+							/>
+						</button>
 					</div>
 					{notf.sms != "" && <div>{notf.sms}</div>}
 					<div>

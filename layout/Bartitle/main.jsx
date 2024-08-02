@@ -2,7 +2,19 @@ import { useEffect } from "react";
 import Icon from "../../components/Icon";
 import Link from "next/link";
 
-export default function Bartitle({ height = 0, frontEnd, setFrontEnd }) {
+export default function Bartitle({
+	height = 0,
+	frontEnd,
+	setFrontEnd,
+	canAccess,
+	backEnd,
+	setBackEnd,
+}) {
+	const logOut = () => {
+		backEnd.title = "Ingresar Contraseña";
+		backEnd.access.can = false;
+		setBackEnd({ ...backEnd });
+	};
 	useEffect(() => {
 		if (frontEnd.theme.dark) document.body.classList.add("dark");
 		else document.body.classList.remove("dark");
@@ -33,7 +45,9 @@ export default function Bartitle({ height = 0, frontEnd, setFrontEnd }) {
 	}, []);
 	return (
 		<div
-			className={"w-[100vw] bg-slate-700 z-[1000] grid text-slate-100"}
+			className={
+				"relative z-[1000] w-[100vw] bg-slate-700 grid text-slate-100"
+			}
 			style={{
 				height: height + "px",
 				WebkitAppRegion: "drag",
@@ -44,21 +58,54 @@ export default function Bartitle({ height = 0, frontEnd, setFrontEnd }) {
 				className="flex justify-start items-center overflow-ellipsis pl-2 gap-2"
 				style={{
 					WebkitAppRegion: "no-drag",
+					fontSize: `${frontEnd.screen.hbartitle * 0.5}px`,
 				}}
 			>
-				<Link
-					href="/"
-					className="flex justify-center items-center gap-1 duration-200 hover:bg-white/25 cursor-pointer px-1 rounded-lg"
-					style={{ fontSize: `${frontEnd.screen.hbartitle * 0.5}px` }}
-				>
-					<Icon id="home" /> Inicio
-				</Link>
-				<div
-					className="flex justify-center items-center gap-1 duration-200 hover:bg-white/25 cursor-pointer px-1 rounded-lg"
-					style={{ fontSize: `${frontEnd.screen.hbartitle * 0.5}px` }}
-				>
-					<Icon id="settings" /> Ajustes
-				</div>
+				{canAccess() == 0 && (
+					<>
+						<div className="group">
+							<Link
+								href="/"
+								className="flex justify-center items-center gap-1 duration-200 hover:bg-white/25 cursor-pointer px-1 rounded-lg"
+							>
+								<Icon id="home" /> Inicio
+							</Link>
+							<div className="text-slate-700 h-0 w-0 overflow-visible hidden group-hover:block">
+								<div
+									className="bg-slate-700 w-32"
+									style={{
+										height: `${
+											frontEnd.screen.hbartitle * 0.05
+										}px`,
+									}}
+								></div>
+								<div
+									className="bg-slate-100 w-32 h-32 border-slate-700 border-2 rounded-b-lg overflow-hidden"
+									style={{
+										height: `${frontEnd.screen.hbartitle}px`,
+									}}
+								>
+									<button
+										className="flex justify-start items-center hover:bg-slate-700 w-full hover:text-white px-2 gap-1"
+										onClick={logOut}
+										style={{
+											height: `${frontEnd.screen.hbartitle}px`,
+										}}
+									>
+										<Icon id="logout" />
+										Cerrar Sesión
+									</button>
+								</div>
+							</div>
+						</div>
+						<Link
+							href="/config"
+							className="flex justify-center items-center gap-1 duration-200 hover:bg-white/25 cursor-pointer px-1 rounded-lg"
+						>
+							<Icon id="settings" /> Ajustes
+						</Link>
+					</>
+				)}
 			</div>
 			<div className="flex items-center justify-center">
 				<div

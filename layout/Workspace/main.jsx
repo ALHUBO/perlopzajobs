@@ -10,11 +10,6 @@ export default function Workspace({
 	setBackEnd,
 	children,
 }) {
-	const logOut = () => {
-		backEnd.title = "Ingresar Contraseña";
-		backEnd.access.can = false;
-		setBackEnd({ ...backEnd });
-	};
 	useEffect(() => {
 		app.on("console-log", (data) => {
 			frontEnd.console.content[

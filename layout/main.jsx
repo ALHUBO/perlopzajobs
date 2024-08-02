@@ -48,6 +48,14 @@ export default function Layout({ children }) {
 			stablished: false,
 			data: { ip: "", port: "", user: "", pass: "", db: "", driver: "" },
 		},
+		udp: {
+			stablished: false,
+			auto: false,
+			portE: 56789,
+			portS: 56790,
+		},
+		ws: { stablished: false, port: 3000 },
+		server: "",
 	});
 
 	const toggleThemeMode = () => {
@@ -122,6 +130,19 @@ export default function Layout({ children }) {
 		});
 
 		app.send("db-data", null);
+
+		//!-----------------------[ Servidor UDP ]---------------------------
+		app.on("udp-get", (response) => {
+			backEnd.udp = { ...response };
+			setBackEnd({ ...backEnd });
+		});
+
+		app.on("udp-active", (response) => {
+			backEnd.udp.stablished = response;
+			setBackEnd({ ...backEnd });
+		});
+
+		app.send("udp-get", null);
 	}, []);
 
 	return (
@@ -130,6 +151,9 @@ export default function Layout({ children }) {
 				height={frontEnd.screen.hbartitle}
 				frontEnd={frontEnd}
 				setFrontEnd={setFrontEnd}
+				backEnd={backEnd}
+				setBackEnd={setBackEnd}
+				canAccess={canAccess}
 			/>
 			<Access
 				canAccess={canAccess}

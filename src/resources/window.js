@@ -1,4 +1,4 @@
-//import-------------------------> Necesario Electron App
+//import----------------------------------------------------------------> Necesario Electron App
 const {
 	app,
 	BrowserWindow,
@@ -8,13 +8,14 @@ const {
 	protocol,
 	screen,
 } = require("electron");
+const os = require("os");
 const { pathToFileURL } = require("url");
 
 if (require("electron-squirrel-startup")) app.quit();
 
 const path = require("path");
 
-//var>---------------------------$ Globales Window
+//var>-------------------------------------------------------------------------$ Globales Window
 var winapp = null; //?---Objeto de la Window
 
 var wind = {
@@ -25,6 +26,68 @@ var wind = {
 	environment: "development", //?---Tipo de aplicacion [ development | production ]
 	UIMode: "system", //?---Tipo de renderizado [ dark | light | system ]
 }; //?---Propiedades de la Window
+
+var backConfig = {
+	ip: "",
+	udp: {
+		stablished: false,
+		auto: false,
+		data: {
+			port: { E: 56789, S: 56790 },
+		},
+	},
+	ws: { stablished: false, auto: false, data: { port: 3000 } },
+	db: {
+		stablished: false,
+		auto: false,
+		data: {
+			ip: "localhost",
+			port: 3306,
+			user: "root",
+			pass: "",
+			db: "PerlopzaJobs",
+			driver: "",
+		},
+	},
+};
+
+//%------------------------------------------------------------------------------------Utilities
+const config = {
+	get: (which) => {
+		if (which === "db") return backConfig.db;
+		if (which === "udp") return backConfig.udp;
+		if (which === "ws") return backConfig.ws;
+		if (which === "ip") return backConfig.ip;
+		return null;
+	},
+
+	set: (prop, data) => {
+		backConfig[prop] = data;
+	},
+};
+
+/**
+ * %--------------------------------[ send(void):void ]
+ * !---Exportado
+ * ?---Recibe un evento de GUI y ejecuta una funcion que recibe (event,data)
+ * @param {string} channel(undefined) Canal de comunicación
+ * @param {any} data(undefined) Informacion que se enviará a GUI
+ * return void
+ **/
+const send = (channel, data) => {
+	winapp.webContents.send(channel, data);
+};
+/**
+ * %--------------------------------[ on(void):void ]
+ * !---Exportado
+ * ?---Recibe un evento de GUI y ejecuta una funcion que recibe (event,data)
+ * @param {string} channel(undefined) Canal de comunicación
+ * @param {function} fnc(undefined) Funcion a ejecutar fnc(event:string,data:any-<Información recibida de la GUI)
+ * return void
+ **/
+const on = (channel, fnc) => {
+	ipcMain.on(channel, fnc);
+};
 
 /**
  * %--------------------------------[ build(destructured-object):Promise ]
@@ -160,18 +223,6 @@ const createWindow = () => {
 	});
 };
 
-/**
- * %--------------------------------[ send(void):void ]
- * !---Exportado
- * ?---Recibe un evento de GUI y ejecuta una funcion que recibe (event,data)
- * @param {string} channel(undefined) Canal de comunicación
- * @param {any} data(undefined) Informacion que se enviará a GUI
- * return void
- **/
-const send = (channel, data) => {
-	winapp.webContents.send(channel, data);
-};
-
 const log = {
 	default: ({
 		icon = "",
@@ -256,18 +307,6 @@ const log = {
 };
 
 /**
- * %--------------------------------[ on(void):void ]
- * !---Exportado
- * ?---Recibe un evento de GUI y ejecuta una funcion que recibe (event,data)
- * @param {string} channel(undefined) Canal de comunicación
- * @param {function} fnc(undefined) Funcion a ejecutar fnc(event:string,data:any-<Información recibida de la GUI)
- * return void
- **/
-const on = (channel, fnc) => {
-	ipcMain.on(channel, fnc);
-};
-
-/**
  * %--------------------------------[ GUI_Call_Window(void):void ]
  * !---No Exportado
  * ?---Asigna eventos que se originan en la GUI y se envian a Window
@@ -327,6 +366,21 @@ const GUI_Call_Window = () => {
 	});
 	on("log-warning", (e, data) => {
 		log.warning(data);
+	});
+
+	on("nic-get", (e, data) => {
+		const networkInterfaces = os.networkInterfaces();
+		const int = {};
+		for (const [name, interfaces] of Object.entries(networkInterfaces)) {
+			for (const iface of interfaces) {
+				if ("IPv4" !== iface.family || iface.internal !== false) {
+					// ignorar IPv6 y interfaces internas (localhost)
+					continue;
+				}
+				int[name] = iface.address;
+			}
+		}
+		send("nic-get", int);
 	});
 };
 
@@ -390,11 +444,21 @@ const load = () => {
 		winapp.loadURL("app://alhubo/"); //?---Archivo local a la app
 };
 
+const regExp = {
+	pass: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d\s]).{12,}$/,
+};
+
+const utilities = {
+	on,
+	send,
+	log,
+	config,
+	regExp,
+};
+
 //export------------------------> Funciones disponible hacia el exterior
 module.exports = {
 	build, //?---Contruye la Window de la aplicación
-	send, //?---Envia información a la GUI
-	log,
-	on, //?---Recibe información de la GUI
 	load, //?---Carga la GUI
+	utilities,
 };

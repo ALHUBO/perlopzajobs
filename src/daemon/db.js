@@ -10,7 +10,8 @@ const db = require("mysql2"),
 //var>---------------------------$ db execution Globals
 var connection = null,
 	builded = false,
-	status = "disconnect"; //?---Conexión activa
+	status = "disconnect",
+	log = null; //?---Conexión activa
 
 //var>---------------------------$ funciones globales
 var onerror = () => {
@@ -45,9 +46,11 @@ const build = ({
 	fnc_send = () => {
 		return;
 	},
+	req_log = null,
 }) => {
 	on = fnc_on;
 	send = fnc_send;
+	log = req_log;
 
 	builded = true;
 };

@@ -218,10 +218,29 @@ export default function Database({ backEnd, setBackEnd }) {
 		});
 	}, []);
 	return (
-		<div className=" border-2 border-slate-500 rounded-lg px-4 py-2">
+		<div className=" border-2 border-slate-500 rounded-lg px-4 py-2 w-full">
 			<div className="text-2xl text-slate-700">Base de datos</div>
 			{editing ? (
 				<>
+					<div>
+						<select
+							value={data.driver.act}
+							onChange={(e) => {
+								setData({
+									...data,
+									driver: {
+										...data.driver,
+										act: e.target.value,
+									},
+								});
+							}}
+						>
+							<option value="">Driver</option>
+							<option value="mysql">MySQL</option>
+							<option value="mariadb">MariaDB</option>
+							<option value="sqlite">SQLite</option>
+						</select>
+					</div>
 					{(data.driver.act == "mysql" ||
 						data.driver.act == "mariadb") && (
 						<>
@@ -322,25 +341,6 @@ export default function Database({ backEnd, setBackEnd }) {
 							/>
 						</div>
 					)}
-					<div>
-						<select
-							value={data.driver.act}
-							onChange={(e) => {
-								setData({
-									...data,
-									driver: {
-										...data.driver,
-										act: e.target.value,
-									},
-								});
-							}}
-						>
-							<option value="">Driver</option>
-							<option value="mysql">MySQL</option>
-							<option value="mariadb">MariaDB</option>
-							<option value="sqlite">SQLite</option>
-						</select>
-					</div>
 					<div className="flex justify-end items-center gap-4">
 						<Button
 							onClick={() => {

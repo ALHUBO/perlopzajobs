@@ -4,28 +4,31 @@ const file = require("./resources/file"),
 	db = require("./daemon/db"),
 	encrypt = require("./resources/encrypt"),
 	access = require("./resources/access"),
-	window = require("./resources/window");
+	window = require("./resources/window"),
+	udp = require("./daemon/udp");
 
 window
 	.build({})
 	.then(() => {
 		access.build({
-			fnc_on: window.on,
-			fnc_send: window.send,
 			req_file: file,
 			req_encrypt: encrypt,
-			req_log: window.log,
+			req_win: window.utilities,
 		});
 		file.build({
-			fnc_on: window.on,
-			fnc_send: window.send,
-			req_log: window.log,
+			req_win: window.utilities,
 		});
-		db.build({ fnc_on: window.on, fnc_send: window.send });
+		db.build({
+			req_win: window.utilities,
+		});
+		udp.build({
+			req_win: window.utilities,
+		});
 
 		access.callFromGUI();
 		file.callFromGUI();
 		db.callFromGUI();
+		udp.callFromGUI();
 
 		window.load();
 	})
