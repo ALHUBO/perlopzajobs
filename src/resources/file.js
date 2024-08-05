@@ -1,27 +1,32 @@
-//import-------------------------> Para manejar archivos
+/**
+ * !--------------------------------------------------------------------------------------------
+ * !					Manejo Archivos
+ * var					Complemento para ALHUBOSoft
+ * import				Son utilidades para hacer mas facil el manejo de archivos.
+ * $					Autor: ALHUBO [Alejandro Huerta Bolaños]
+ * %					V1.0 [ ２０２４年4月5日 - ]
+ * ?					https://github.com/ALHUBO/ALHUBOSoft
+ * !--------------------------------------------------------------------------------------------
+ * **/
+
+//import-----------------------------------------------------------------------------> Necesario
 const fs = require("fs");
 
-//var>---------------------------$ Globales del file.js
-var on = () => {},
-	send = () => {};
+//var>--------------------------------------------------------------------$ Globales del file.js
 var builded = false,
-	log = null;
+	win = null;
 
-const build = ({
-	fnc_on = () => {
-		return;
-	},
-	fnc_send = () => {
-		return;
-	},
-	req_log = null,
-}) => {
-	on = fnc_on;
-	send = fnc_send;
+//?----------------------------------------------------------------------------------Constructor
+const build = ({ req_win = null }) => {
+	win = req_win;
 	builded = true;
-	log = req_log;
+};
+const isBuild = () => {
+	if (!builded) console.log("No se ha construido el daemon [access.js].");
+	return builded;
 };
 
+//!___________________________________________________________________________Funciones internas
 /**
  * %--------------------------------[ parseDir(string):Promise ]
  * !---No Exportado
@@ -46,19 +51,23 @@ const parseDir = (dir) => {
 
 const existsFile = (dir) => {
 	return new Promise((resolve, reject) => {
+		if (!isBuild()) {
+			reject(new Error("No se ha contruido el rekiem [file.js]."));
+			return;
+		}
 		dir = parseDir(dir);
 		fs.stat(dir, (error, stats) => {
 			if (error) {
 				reject(error);
 				if (error.code === "ENOENT")
-					log.warning({
+					win.log.warning({
 						icon: "draft",
 						title: "File",
 						content: "The file does not exists",
 						advanced: dir,
 					});
 				else
-					log.error({
+					win.log.error({
 						icon: "draft",
 						title: "File",
 						content: "Error searching for file",
@@ -76,14 +85,18 @@ const existsFile = (dir) => {
  * @param {string} dir(undefined)
  * return Promise->then(object:{ 0:{ root:string-<ruta, type[0=Desconocido|1=Archivo|2=Directorio]:int-<tipoArchivo } })
  **/
-function list(dir) {
+const list = (dir) => {
 	return new Promise((resolve, reject) => {
+		if (!isBuild()) {
+			reject(new Error("No se ha contruido el rekiem [file.js]."));
+			return;
+		}
 		existsDir(dir)
 			.then(() => {
 				const root = (dir = parseDir(dir));
 				fs.readdir(root, (error, archivos) => {
 					if (error) {
-						log.error({
+						win.log.error({
 							icon: "folder_open",
 							title: "Directory",
 							content: "Error reading directory contents",
@@ -133,7 +146,7 @@ function list(dir) {
 							resolve(items);
 						})
 						.catch((error) => {
-							log.error({
+							win.log.error({
 								icon: "perm_media",
 								title: "Directory",
 								content: "Error reading content type",
@@ -144,7 +157,7 @@ function list(dir) {
 				});
 			})
 			.catch((e) => {
-				log.error({
+				win.log.error({
 					icon: "folder_open",
 					title: "Directory",
 					content: "Error reading directory contents",
@@ -152,7 +165,7 @@ function list(dir) {
 				});
 			});
 	});
-}
+};
 
 /**
  * %--------------------------------[ write(string, string):Promise ]
@@ -162,7 +175,11 @@ function list(dir) {
  * @param {string} data(undefined) Texto plano a guardar
  * return Promise->then(flag:string-<Success)
  **/
-function write(dir, name, data) {
+const write = (dir, name, data) => {
+	if (!isBuild()) {
+		reject(new Error("No se ha contruido el rekiem [file.js]."));
+		return;
+	}
 	return new Promise((resolve, reject) => {
 		createDir(dir)
 			.then(() => {
@@ -173,7 +190,7 @@ function write(dir, name, data) {
 				});
 			})
 			.catch((e) => {
-				log.error({
+				win.log.error({
 					icon: "description",
 					title: "File",
 					content: "Error writing file content",
@@ -182,7 +199,7 @@ function write(dir, name, data) {
 				reject(e);
 			});
 	});
-}
+};
 
 /**
  * %--------------------------------[ read(string):Promise ]
@@ -191,8 +208,12 @@ function write(dir, name, data) {
  * @param {string} dir(undefined) Ruta del archivo a leer
  * return Promise->then(data:string-<Texto Plano leido)
  **/
-function read(file) {
+const read = (file) => {
 	return new Promise((resolve, reject) => {
+		if (!isBuild()) {
+			reject(new Error("No se ha contruido el rekiem [file.js]."));
+			return;
+		}
 		existsFile(file)
 			.then(() => {
 				fs.readFile(file, "utf8", (error, data) => {
@@ -202,7 +223,7 @@ function read(file) {
 			})
 			.catch((e) => {
 				reject(e);
-				log.error({
+				win.log.error({
 					icon: "description",
 					title: "File",
 					content: "Error reading file content",
@@ -210,7 +231,7 @@ function read(file) {
 				});
 			});
 	});
-}
+};
 
 /**
  * %--------------------------------[ del(string):Promise ]
@@ -219,8 +240,12 @@ function read(file) {
  * @param {string} dir(undefined) Ruta del archivo a eliminar
  * return Promise->then(flag:string-<Success)
  **/
-function del(file) {
+const del = (file) => {
 	return new Promise((resolve, reject) => {
+		if (!isBuild()) {
+			reject(new Error("No se ha contruido el rekiem [file.js]."));
+			return;
+		}
 		file = parseDir(file);
 		existsFile(file)
 			.then(() => {
@@ -230,7 +255,7 @@ function del(file) {
 							fs.unlink(file, (error) => {
 								if (error) {
 									reject(error);
-									log.error({
+									win.log.error({
 										icon: "scan_delete",
 										title: "File",
 										content: "Error deleting file",
@@ -242,7 +267,7 @@ function del(file) {
 									);
 							});
 						} else
-							log.error({
+							win.log.error({
 								icon: "scan_delete",
 								title: "File",
 								content:
@@ -252,7 +277,7 @@ function del(file) {
 					})
 					.catch((e) => {
 						reject(e);
-						log.error({
+						win.log.error({
 							icon: "scan_delete",
 							title: "File",
 							content: "Error deleting file",
@@ -262,7 +287,7 @@ function del(file) {
 			})
 			.catch((e) => {
 				reject(e);
-				log.error({
+				win.log.error({
 					icon: "scan_delete",
 					title: "File",
 					content: "Error deleting file",
@@ -270,7 +295,7 @@ function del(file) {
 				});
 			});
 	});
-}
+};
 
 /**
  * %--------------------------------[ itemType(string):Promise ]
@@ -279,12 +304,16 @@ function del(file) {
  * @param {string} dir(undefined) Ruta del archivo a examinar
  * return Promise->then(tipo:int-<[0=Desconocido|1=Archivo|2=Carpeta])
  **/
-function itemType(root) {
+const itemType = (root) => {
 	return new Promise((resolve, reject) => {
+		if (!isBuild()) {
+			reject(new Error("No se ha contruido el rekiem [file.js]."));
+			return;
+		}
 		fs.stat(root, (err, stats) => {
 			if (err) {
 				reject(err);
-				log.error({
+				win.log.error({
 					icon: "description",
 					title: "Content",
 					content:
@@ -299,7 +328,7 @@ function itemType(root) {
 			else resolve(0);
 		});
 	});
-}
+};
 
 /**
  * %--------------------------------[ userfilesystem(void):Promise ]
@@ -310,9 +339,13 @@ function itemType(root) {
 const createDir = (dir) => {
 	dir = parseDir(dir);
 	return new Promise((resolve, reject) => {
+		if (!isBuild()) {
+			reject(new Error("No directory name specified."));
+			return;
+		}
 		if (typeof dir != "string" || dir == "") {
 			reject(new Error("No directory name specified."));
-			log.error({
+			win.log.error({
 				icon: "folder",
 				title: "Directory",
 				content: "No directory name specified.",
@@ -325,7 +358,7 @@ const createDir = (dir) => {
 				fs.mkdir(`${dir}`, { recursive: true }, (err) => {
 					if (err) {
 						reject(err);
-						log.error({
+						win.log.error({
 							icon: "folder",
 							title: "Directory",
 							content: "The directory could not be created.",
@@ -341,9 +374,13 @@ const createDir = (dir) => {
 const existsDir = (dir) => {
 	dir = parseDir(dir);
 	return new Promise((resolve, reject) => {
+		if (!isBuild()) {
+			reject(new Error("No directory name specified."));
+			return;
+		}
 		if (typeof dir != "string" || dir == "") {
 			reject(new Error("No directory name specified."));
-			log.error({
+			win.log.error({
 				icon: "folder",
 				title: "Directory",
 				content: "No directory name specified.",
@@ -358,21 +395,25 @@ const existsDir = (dir) => {
 	});
 };
 
-const callFromGUI = () => {
-	if (!builded) {
-		console.log("The daemon has not been built");
-		return;
-	}
-};
-
-//export------------------------> Funciones disponible hacia el exterior
-module.exports = {
-	build,
+//$--------------------------------------------------------------------------Funciones expuestas
+const utilities = {
 	parseDir,
 	existsFile,
+	list,
+	write,
+	read,
+	del,
+	createDir,
+	existsDir,
+};
+
+//export------------------------------------------------> Funciones disponible hacia el exterior
+const callFromGUI = () => {
+	if (!isBuild()) return;
+};
+
+module.exports = {
+	build,
 	callFromGUI,
-	list, //?---Lista contenido directorio
-	write, //?---Escribe un archivo texto plano
-	read, //?---Lee archivo texto plano
-	del, //?---Elimina un archivo o directorio
+	utilities,
 };

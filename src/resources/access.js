@@ -1,9 +1,22 @@
-//var>---------------------------$ Globales del access.js
+/**
+ * !--------------------------------------------------------------------------------------------
+ * !					Control de acceso
+ * var					Complemento para ALHUBOSoft
+ * import				Sirve para controlar si se tiene acceso al servidor y a su configuración
+ * $					Autor: ALHUBO [Alejandro Huerta Bolaños]
+ * %					V1.0 [ ２０２４年4月5日 - ]
+ * ?					https://github.com/ALHUBO/ALHUBOSoft
+ * !--------------------------------------------------------------------------------------------
+ * **/
+
+//var>------------------------------------------------------------------$ Globales del access.js
 
 var builded = false, //?---Se contruyo el rekiem
 	encrypt = null, //?---Rekiem externo
 	file = null, //?---Rekiem externo
 	win = null; //?---Funciones utiles de window
+
+//?----------------------------------------------------------------------------------Constructor
 
 const build = ({ req_file = null, req_encrypt = null, req_win = null }) => {
 	file = req_file;
@@ -17,14 +30,14 @@ const isBuild = () => {
 	return builded;
 };
 
-//!___________________________[Funciones internas]_________________________________________
+//$--------------------------------------------------------------------------Funciones expuestas
 const exists = () => {
 	file.existsFile(file.parseDir("./dtx/access.ahb"))
 		.then(() => {
-			send("access-exists", true);
+			win.send("access-exists", true);
 		})
 		.catch((e) => {
-			send("access-exists", false);
+			win.send("access-exists", false);
 		});
 };
 
@@ -152,19 +165,17 @@ const enter = (pass) => {
 		});
 };
 
-//!___________________________[Funciones internas]_________________________________________
-
+//export------------------------------------------------> Funciones disponible hacia el exterior
 const callFromGUI = () => {
 	if (!isBuild()) return;
 
-	on("access-exists", (e, data) => exists());
+	win.on("access-exists", (e, data) => exists());
 
-	on("access-create", (e, data) => create(data));
+	win.on("access-create", (e, data) => create(data));
 
-	on("access-enter", (e, data) => enter(data));
+	win.on("access-enter", (e, data) => enter(data));
 };
 
-//export------------------------> Funciones disponible hacia el exterior
 module.exports = {
 	build,
 	callFromGUI,

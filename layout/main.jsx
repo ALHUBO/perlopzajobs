@@ -38,24 +38,27 @@ export default function Layout({ children }) {
 	});
 
 	const [backEnd, setBackEnd] = useState({
-		access: {
-			exists: null,
-			pass: "",
-			can: false,
-			wait: false,
-		},
-		db: {
-			stablished: false,
-			data: { ip: "", port: "", user: "", pass: "", db: "", driver: "" },
-		},
+		ip: "",
 		udp: {
 			stablished: false,
 			auto: false,
-			portE: 56789,
-			portS: 56790,
+			data: {
+				port: { E: 56789, S: 56790 },
+			},
 		},
-		ws: { stablished: false, port: 3000 },
-		server: "",
+		ws: { stablished: false, auto: false, data: { port: 3000 } },
+		db: {
+			stablished: false,
+			auto: false,
+			data: {
+				ip: "localhost",
+				port: 3306,
+				user: "root",
+				pass: "",
+				db: "PerlopzaJobs",
+				driver: "",
+			},
+		},
 	});
 
 	const toggleThemeMode = () => {
@@ -107,42 +110,11 @@ export default function Layout({ children }) {
 
 	//!---------------------------[ Despues de cargar el DOM ]------------------------------
 	useEffect(() => {
-		app.on("db-is-connect", (response) => {
-			backEnd.db.stablished = response;
-			setBackEnd({
-				...backEnd,
-			});
+		app.on("app-config", (response) => {
+			setBackEnd({ ...response });
 		});
 
-		app.on("db-data", (response) => {
-			backEnd.db.data = {
-				ip: response.host,
-				port: response.port,
-				user: response.user,
-				pass: response.password,
-				db: response.database,
-				driver: response.driver,
-			};
-			setBackEnd({
-				...backEnd,
-			});
-			app.send("db-is-connect", null);
-		});
-
-		app.send("db-data", null);
-
-		//!-----------------------[ Servidor UDP ]---------------------------
-		app.on("udp-get", (response) => {
-			backEnd.udp = { ...response };
-			setBackEnd({ ...backEnd });
-		});
-
-		app.on("udp-active", (response) => {
-			backEnd.udp.stablished = response;
-			setBackEnd({ ...backEnd });
-		});
-
-		app.send("udp-get", null);
+		app.send("app-config", false);
 	}, []);
 
 	return (

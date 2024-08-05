@@ -1,3 +1,15 @@
+/**
+ * !--------------------------------------------------------------------------------------------
+ * !					Encriptación
+ * var					Complemento para ALHUBOSoft
+ * import				Manejo del encriptado de información mas sensillo.
+ * $					Autor: ALHUBO [Alejandro Huerta Bolaños]
+ * %					V1.0 [ ２０２４年4月5日 - ]
+ * ?					https://github.com/ALHUBO/ALHUBOSoft
+ * !--------------------------------------------------------------------------------------------
+ * **/
+
+//import-----------------------------------------------------------------------------> Necesario
 const crypto = require("crypto");
 
 //!------------------------------------------------------------------------
@@ -5,7 +17,7 @@ const crypto = require("crypto");
 //!------------------------------------------------------------------------
 
 //TODO----------------------------[ Generador de Claves ]--------------------------
-function RSAcreateKeys() {
+const RSAcreateKeys = () => {
 	// Generar un par de claves RSA
 	const { publicKey, privateKey } = crypto.generateKeyPairSync("rsa", {
 		modulusLength: 2048,
@@ -19,24 +31,24 @@ function RSAcreateKeys() {
 		},
 	});
 	return [publicKey, privateKey];
-}
+};
 
 //TODO-----------------------------[ Encriptar Mensaje ]---------------------------------
-function RSAEncrypt(sms, publicKey) {
+const RSAEncrypt = (sms, publicKey) => {
 	return crypto.publicEncrypt(publicKey, Buffer.from(sms, "utf-8"));
-}
+};
 
 //TODO-------------------------------------[ Desencriptar Mensaje ]---------------------
-function RSADencrypt(sms, privateKey) {
+const RSADencrypt = (sms, privateKey) => {
 	return crypto.privateDecrypt(privateKey, sms).toString("utf-8");
-}
+};
 
 //!------------------------------------------------------------------------
 //!                               Cypher
 //!------------------------------------------------------------------------
 
 //TODO-----------------------[ Genera un cifrador a partir de una contraseña ]---------------------------
-function genCifer(password) {
+const genCifer = (password) => {
 	return new Promise((resolve, reject) => {
 		let iteraciones = 1;
 
@@ -66,10 +78,10 @@ function genCifer(password) {
 			}
 		);
 	});
-}
+};
 
 //TODO-------------------------[ Convierte una contraseña ASCII a Un buffer de 16 bytes ]---------------------------------
-function Ascii2Pass16(txt) {
+const Ascii2Pass16 = (txt) => {
 	let num = [];
 	let buff = [];
 	while (buff.length < 16) {
@@ -99,10 +111,10 @@ function Ascii2Pass16(txt) {
 	}
 
 	return Buffer.from(buffFin, "hex");
-}
+};
 
 //TODO--------------------------------------[ Cifra un mensaje ]--------------------------------------------
-function CiferSMS(sms, cifer) {
+const CiferSMS = (sms, cifer) => {
 	const mcipher = crypto.createCipheriv(
 		"aes-256-cbc",
 		cifer.deriv,
@@ -111,10 +123,10 @@ function CiferSMS(sms, cifer) {
 	let datosEncriptados = mcipher.update(sms, "utf-8", "hex");
 	datosEncriptados += mcipher.final("hex");
 	return datosEncriptados.toUpperCase();
-}
+};
 
 //TODO------------------------------[Decifra un mensaje ]------------------------------------
-function DeciferSMS(sms, cifer) {
+const DeciferSMS = (sms, cifer) => {
 	const decipher = crypto.createDecipheriv(
 		"aes-256-cbc",
 		cifer.deriv,
@@ -128,23 +140,23 @@ function DeciferSMS(sms, cifer) {
 		console.log(e);
 	}
 	return datosDescifrados;
-}
+};
 
 //!------------------------------------------------------------------------
 //!                               Cryptographer
 //!------------------------------------------------------------------------
-function ASCII2sha256(texto) {
+const ASCII2sha256 = (texto) => {
 	const hash = crypto.createHash("sha256");
 	hash.update(texto);
 	return hash.digest("hex").toUpperCase();
-}
+};
 
 //!------------------------------------------------------------------------
 //!                               Cypher
 //!------------------------------------------------------------------------
 
 //TODO-----------------------------[ Generador Key Publica ALHUBO-Softwares ]--------------------------------
-function genKeyPublic() {
+const genKeyPublic = () => {
 	const kpu = crypto.randomBytes(6);
 	let str = "";
 	for (let i = 0; i < kpu.length; i++) {
@@ -152,7 +164,7 @@ function genKeyPublic() {
 		if (i < kpu.length - 1) str += "-";
 	}
 	return str;
-}
+};
 
 //!------------------------------------------------------------------------
 //!                               Exportar modulos

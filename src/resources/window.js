@@ -1,3 +1,14 @@
+/**
+ * !--------------------------------------------------------------------------------------------
+ * !					Back-End
+ * var					Base para ALHUBOSoft
+ * import				Todo lo necesario para crear una ventana del programa.
+ * $					Autor: ALHUBO [Alejandro Huerta Bolaños]
+ * %					V1.0 [ ２０２４年4月5日 - ]
+ * ?					https://github.com/ALHUBO/ALHUBOSoft
+ * !--------------------------------------------------------------------------------------------
+ * **/
+
 //import----------------------------------------------------------------> Necesario Electron App
 const {
 	app,
@@ -24,6 +35,7 @@ var wind = {
 		h: 0,
 	},
 	environment: "development", //?---Tipo de aplicacion [ development | production ]
+	devtools: false, //?---Show dev tools?
 	UIMode: "system", //?---Tipo de renderizado [ dark | light | system ]
 }; //?---Propiedades de la Window
 
@@ -382,6 +394,15 @@ const GUI_Call_Window = () => {
 		}
 		send("nic-get", int);
 	});
+
+	on("app-config", (e, data) => {
+		if (data) {
+			//save
+		} else {
+			//get
+			send("app-config", { ...backConfig });
+		}
+	});
 };
 
 /**
@@ -439,7 +460,8 @@ const load = () => {
 	//$-------------------> Peticion inicial para cargar la GUI
 	if (wind.environment == "development") {
 		winapp.loadURL("http://localhost:3000"); //?---localhost next
-		winapp.webContents.openDevTools(); //?---abre las herramientas de desarrollador
+
+		if (wind.devtools) winapp.webContents.openDevTools(); //?---abre las herramientas de desarrollador
 	} else if (wind.environment == "production")
 		winapp.loadURL("app://alhubo/"); //?---Archivo local a la app
 };

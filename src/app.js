@@ -1,34 +1,45 @@
+/**
+ * !--------------------------------------------------------------------------------------------
+ * !					Applicación
+ * var					ALHUBOSoft
+ * import				Inicialización del programa.
+ * $					Autor: ALHUBO [Alejandro Huerta Bolaños]
+ * %					V1.0 [ ２０２４年4月5日 - ]
+ * ?					https://github.com/ALHUBO/ALHUBOSoft
+ * !--------------------------------------------------------------------------------------------
+ * **/
+
 //import-------------------------> Necesario Execution Node
 //var>---------------------------$ Node Execution Globals
-const file = require("./resources/file"),
-	db = require("./daemon/db"),
+const window = require("./resources/window"),
+	file = require("./resources/file"),
 	encrypt = require("./resources/encrypt"),
 	access = require("./resources/access"),
-	window = require("./resources/window"),
-	udp = require("./daemon/udp");
+	udp = require("./daemon/udp"),
+	db = require("./daemon/db");
 
 window
 	.build({})
 	.then(() => {
-		access.build({
-			req_file: file,
-			req_encrypt: encrypt,
-			req_win: window.utilities,
-		});
 		file.build({
 			req_win: window.utilities,
 		});
-		db.build({
+		access.build({
+			req_file: file.utilities,
+			req_encrypt: encrypt,
 			req_win: window.utilities,
 		});
 		udp.build({
 			req_win: window.utilities,
 		});
+		db.build({
+			req_win: window.utilities,
+		});
 
-		access.callFromGUI();
 		file.callFromGUI();
-		db.callFromGUI();
+		access.callFromGUI();
 		udp.callFromGUI();
+		db.callFromGUI();
 
 		window.load();
 	})
