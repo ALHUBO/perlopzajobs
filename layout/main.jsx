@@ -10,8 +10,11 @@ import {
 import Access from "./Access/main";
 import Bartitle from "./Bartitle/main";
 import Workspace from "./Workspace/main";
+import Icon from "../components/Icon";
+import Console from "./Console/main";
 
 export default function Layout({ children }) {
+	let [erConf, setErConf] = useState("");
 	const childs = Children.toArray(children).filter((child) =>
 		isValidElement(child)
 	);
@@ -58,6 +61,10 @@ export default function Layout({ children }) {
 				db: "PerlopzaJobs",
 				driver: "",
 			},
+		},
+		access: {
+			exists: null,
+			can: false,
 		},
 	});
 
@@ -110,11 +117,14 @@ export default function Layout({ children }) {
 
 	//!---------------------------[ Despues de cargar el DOM ]------------------------------
 	useEffect(() => {
-		app.on("app-config", (response) => {
-			setBackEnd({ ...response });
+		app.on("config-load", (response) => {
+			if (response.error) {
+				console.log(response);
+				setErConf((erConf = response.sms));
+			} else setBackEnd({ ...response.sms });
 		});
 
-		app.send("app-config", false);
+		app.send("config-load", localStorage.getItem("config.shifer"));
 	}, []);
 
 	return (
@@ -127,30 +137,62 @@ export default function Layout({ children }) {
 				setBackEnd={setBackEnd}
 				canAccess={canAccess}
 			/>
-			<Access
-				canAccess={canAccess}
-				frontEnd={frontEnd}
-				setFrontEnd={setFrontEnd}
-				backEnd={backEnd}
-				setBackEnd={setBackEnd}
-			/>
-			<Workspace
-				canAccess={canAccess}
-				frontEnd={frontEnd}
-				setFrontEnd={setFrontEnd}
-				backEnd={backEnd}
-				setBackEnd={setBackEnd}
-			>
-				{childs.map((child, index) =>
-					cloneElement(child, {
-						key: index,
-						frontEnd,
-						setFrontEnd,
-						backEnd,
-						setBackEnd,
-					})
-				)}
-			</Workspace>
+			{erConf == "" ? (
+				<>
+					<Access
+						canAccess={canAccess}
+						frontEnd={frontEnd}
+						setFrontEnd={setFrontEnd}
+						backEnd={backEnd}
+						setBackEnd={setBackEnd}
+					/>
+					<Workspace
+						canAccess={canAccess}
+						frontEnd={frontEnd}
+						setFrontEnd={setFrontEnd}
+						backEnd={backEnd}
+						setBackEnd={setBackEnd}
+					>
+						{childs.map((child, index) =>
+							cloneElement(child, {
+								key: index,
+								frontEnd,
+								setFrontEnd,
+								backEnd,
+								setBackEnd,
+							})
+						)}
+					</Workspace>
+				</>
+			) : (
+				<>
+					<div
+						className="flex justify-center items-center flex-col"
+						style={{
+							height: frontEnd.console.open
+								? "0px"
+								: "calc(100vh - " +
+								  frontEnd.screen.hbartitle * 2 +
+								  "px)",
+						}}
+					>
+						<div className="text-9xl text-red-700">
+							<Icon id="code_blocks" />
+						</div>
+						<div className="font-bold text-3xl text-slate-700">
+							Error en configuración
+						</div>
+						<div className="text-lg text-slate-500 px-[20%]">
+							{erConf}
+						</div>
+					</div>
+					<Console
+						safeArea={frontEnd.screen.hbartitle}
+						frontEnd={frontEnd}
+						setFrontEnd={setFrontEnd}
+					/>
+				</>
+			)}
 		</Fragment>
 	);
 }

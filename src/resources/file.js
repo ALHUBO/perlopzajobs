@@ -13,29 +13,10 @@
 const fs = require("fs");
 
 //var>--------------------------------------------------------------------$ Globales del file.js
-var builded = false,
-	win = null;
+var win = null;
 
-//?----------------------------------------------------------------------------------Constructor
-const build = ({ req_win = null }) => {
-	win = req_win;
-	builded = true;
-};
-const isBuild = () => {
-	if (!builded) console.log("No se ha construido el daemon [access.js].");
-	return builded;
-};
-
-//!___________________________________________________________________________Funciones internas
-/**
- * %--------------------------------[ parseDir(string):Promise ]
- * !---No Exportado
- * ?---Estandariza las rutas y no permite acceso hacia atras
- * ?---Si utiliza la ruta %UF% crea el directorio para archivos de usuario si no existe
- * @param {string} dir(undefined) Ruta a estandarizar
- * return Promise->then(string)
- **/
-const parseDir = (dir) => {
+//!___________________________________________________________________________Funciones Back-End
+const _parseRoot = (dir) => {
 	if (typeof dir != "string") dir = "";
 
 	dir = dir
@@ -49,277 +30,248 @@ const parseDir = (dir) => {
 	return dir;
 };
 
-const existsFile = (dir) => {
+const _existsDir = (dir) => {
 	return new Promise((resolve, reject) => {
-		if (!isBuild()) {
-			reject(new Error("No se ha contruido el rekiem [file.js]."));
+		if (typeof dir != "string" || dir == "") {
+			reject({
+				error: new Error(
+					"_existsDir requires the directory path to be specified in [string] format."
+				),
+				message: "No directory name specified.",
+			});
 			return;
 		}
-		dir = parseDir(dir);
-		fs.stat(dir, (error, stats) => {
-			if (error) {
-				reject(error);
-				if (error.code === "ENOENT")
-					win.log.warning({
-						icon: "draft",
-						title: "File",
-						content: "The file does not exists",
-						advanced: dir,
-					});
-				else
-					win.log.error({
-						icon: "draft",
-						title: "File",
-						content: "Error searching for file",
-						advanced: error,
-					});
-			} else resolve(stats);
+		fs.access(_parseRoot(dir), (error) => {
+			if (error) resolve(false);
+			else resolve(true);
 		});
 	});
 };
 
-/**
- * %--------------------------------[ list(string):Promise ]
- * !---Exportado
- * ?---Devuelve la lista de archivos y carpetas de un directorio
- * @param {string} dir(undefined)
- * return Promise->then(object:{ 0:{ root:string-<ruta, type[0=Desconocido|1=Archivo|2=Directorio]:int-<tipoArchivo } })
- **/
-const list = (dir) => {
+const _existsFile = (dir) => {
 	return new Promise((resolve, reject) => {
-		if (!isBuild()) {
-			reject(new Error("No se ha contruido el rekiem [file.js]."));
+		if (typeof dir != "string" || dir == "") {
+			reject({
+				error: new Error(
+					"_existsFile requires the file path to be specified in [string] format."
+				),
+				message: "No file path specified.",
+			});
 			return;
 		}
-		existsDir(dir)
-			.then(() => {
-				const root = (dir = parseDir(dir));
-				fs.readdir(root, (error, archivos) => {
-					if (error) {
-						win.log.error({
-							icon: "folder_open",
-							title: "Directory",
-							content: "Error reading directory contents",
-							advanced: error,
-						});
-						reject(error);
-						return;
-					}
-					let promesasLectura = [];
-					let items = {};
-					archivos.forEach((item) => {
-						let rutaArchivo = `${root}/${item}`;
-						rutaArchivo = rutaArchivo.replace(/\/\//g, "/");
-						promesasLectura.push(
-							new Promise((resolve, reject) => {
-								fs.stat(rutaArchivo, (err, stats) => {
-									if (err) {
-										reject(err);
-										return;
-									}
-
-									if (stats.isFile()) {
-										items[Object.keys(items).length] = {
-											root: rutaArchivo,
-											type: 1,
-										};
-										resolve("");
-									} else if (stats.isDirectory()) {
-										items[Object.keys(items).length] = {
-											root: rutaArchivo,
-											type: 2,
-										};
-										resolve("");
-									} else {
-										items[Object.keys(items).length] = {
-											root: rutaArchivo,
-											type: 0,
-										};
-										resolve("");
-									}
-								});
-							})
-						);
+		fs.stat(_parseRoot(dir), (error, stats) => {
+			if (error) {
+				if (error.code === "ENOENT") resolve(false);
+				else
+					reject({
+						error: error,
+						message: "Error searching for file.",
 					});
-					Promise.all(promesasLectura)
-						.then(() => {
-							resolve(items);
-						})
-						.catch((error) => {
-							win.log.error({
-								icon: "perm_media",
-								title: "Directory",
-								content: "Error reading content type",
-								advanced: error,
+			} else resolve(true);
+		});
+	});
+};
+
+const _listDir = (dir) => {
+	return new Promise((resolve, reject) => {
+		if (typeof dir != "string" || dir == "") {
+			reject({
+				error: new Error(
+					"_listDir requires the directory path to be specified in [string] format."
+				),
+				message: "No directory name specified.",
+			});
+			return;
+		}
+		_existsDir(dir)
+			.then((ex) => {
+				if (ex) {
+					fs.readdir(_parseRoot(dir), (error, archivos) => {
+						if (error) {
+							reject({
+								error: error,
+								message: "Error reading directory contents.",
 							});
-							reject(error);
-						});
-				});
-			})
-			.catch((e) => {
-				win.log.error({
-					icon: "folder_open",
-					title: "Directory",
-					content: "Error reading directory contents",
-					advanced: e,
-				});
-			});
-	});
-};
+							return;
+						}
+						let promesasLectura = [];
+						let items = {};
+						archivos.forEach((item) => {
+							let rutaArchivo = `${root}/${item}`;
+							rutaArchivo = rutaArchivo.replace(/\/\//g, "/");
+							promesasLectura.push(
+								new Promise((resolve, reject) => {
+									fs.stat(
+										_parseRoot(rutaArchivo),
+										(err, stats) => {
+											if (err) {
+												reject(err);
+												return;
+											}
 
-/**
- * %--------------------------------[ write(string, string):Promise ]
- * !---Exportado
- * ?---Escribe texto plano en un archivo
- * @param {string} dir(undefined) Ruta del archivo a guardar
- * @param {string} data(undefined) Texto plano a guardar
- * return Promise->then(flag:string-<Success)
- **/
-const write = (dir, name, data) => {
-	if (!isBuild()) {
-		reject(new Error("No se ha contruido el rekiem [file.js]."));
-		return;
-	}
-	return new Promise((resolve, reject) => {
-		createDir(dir)
-			.then(() => {
-				const root = parseDir(`${dir}/${name}`);
-				fs.writeFile(root, data, (error) => {
-					if (error) reject(error);
-					else resolve("Archivo Escrito Correctamente!");
-				});
-			})
-			.catch((e) => {
-				win.log.error({
-					icon: "description",
-					title: "File",
-					content: "Error writing file content",
-					advanced: e,
-				});
-				reject(e);
-			});
-	});
-};
-
-/**
- * %--------------------------------[ read(string):Promise ]
- * !---Exportado
- * ?---Lee texto plano de un archivo
- * @param {string} dir(undefined) Ruta del archivo a leer
- * return Promise->then(data:string-<Texto Plano leido)
- **/
-const read = (file) => {
-	return new Promise((resolve, reject) => {
-		if (!isBuild()) {
-			reject(new Error("No se ha contruido el rekiem [file.js]."));
-			return;
-		}
-		existsFile(file)
-			.then(() => {
-				fs.readFile(file, "utf8", (error, data) => {
-					if (error) reject(error);
-					else resolve(data);
-				});
-			})
-			.catch((e) => {
-				reject(e);
-				win.log.error({
-					icon: "description",
-					title: "File",
-					content: "Error reading file content",
-					advanced: e,
-				});
-			});
-	});
-};
-
-/**
- * %--------------------------------[ del(string):Promise ]
- * !---Exportado
- * ?---Elimina un archivo
- * @param {string} dir(undefined) Ruta del archivo a eliminar
- * return Promise->then(flag:string-<Success)
- **/
-const del = (file) => {
-	return new Promise((resolve, reject) => {
-		if (!isBuild()) {
-			reject(new Error("No se ha contruido el rekiem [file.js]."));
-			return;
-		}
-		file = parseDir(file);
-		existsFile(file)
-			.then(() => {
-				itemType(file)
-					.then((type) => {
-						if (type == 1) {
-							fs.unlink(file, (error) => {
-								if (error) {
-									reject(error);
-									win.log.error({
-										icon: "scan_delete",
-										title: "File",
-										content: "Error deleting file",
-										advanced: error,
-									});
-								} else
-									resolve(
-										"Se borro correctamente el archivo"
+											if (stats.isFile()) {
+												items[
+													Object.keys(items).length
+												] = {
+													root: rutaArchivo,
+													type: 1,
+												};
+												resolve("");
+											} else if (stats.isDirectory()) {
+												items[
+													Object.keys(items).length
+												] = {
+													root: rutaArchivo,
+													type: 2,
+												};
+												resolve("");
+											} else {
+												items[
+													Object.keys(items).length
+												] = {
+													root: rutaArchivo,
+													type: 0,
+												};
+												resolve("");
+											}
+										}
 									);
-							});
-						} else
-							win.log.error({
-								icon: "scan_delete",
-								title: "File",
-								content:
-									"It was not possible to delete because it is not a file",
-								advanced: file,
-							});
-					})
-					.catch((e) => {
-						reject(e);
-						win.log.error({
-							icon: "scan_delete",
-							title: "File",
-							content: "Error deleting file",
-							advanced: e,
+								})
+							);
 						});
+						Promise.all(promesasLectura)
+							.then(() => {
+								resolve(items);
+							})
+							.catch((error) => {
+								reject({
+									error: error,
+									message:
+										"Error reading directory contents.",
+								});
+							});
+					});
+				} else
+					reject({
+						error: new Error(
+							`The directory [${dir}] does not exist.`
+						),
+						message: "Error reading directory contents.",
 					});
 			})
 			.catch((e) => {
-				reject(e);
-				win.log.error({
-					icon: "scan_delete",
-					title: "File",
-					content: "Error deleting file",
-					advanced: e,
+				reject({
+					error: e,
+					message: "Error reading directory contents.",
 				});
 			});
 	});
 };
 
-/**
- * %--------------------------------[ itemType(string):Promise ]
- * !---No exportado
- * ?---Obtiene si es un archivo o una carpeta
- * @param {string} dir(undefined) Ruta del archivo a examinar
- * return Promise->then(tipo:int-<[0=Desconocido|1=Archivo|2=Carpeta])
- **/
-const itemType = (root) => {
+const _createDir = (dir) => {
 	return new Promise((resolve, reject) => {
-		if (!isBuild()) {
-			reject(new Error("No se ha contruido el rekiem [file.js]."));
+		if (typeof dir != "string" || dir == "") {
+			reject({
+				error: new Error(
+					"_createDir requires the directory path to be specified in [string] format."
+				),
+				message: "No directory name specified.",
+			});
 			return;
 		}
-		fs.stat(root, (err, stats) => {
+		fs.access(_parseRoot(dir), (error) => {
+			if (error) {
+				fs.mkdir(`${dir}`, { recursive: true }, (err) => {
+					if (err)
+						reject({
+							error: err,
+							message: "The directory could not be created.",
+						});
+					else resolve(true);
+				});
+			} else resolve(true);
+		});
+	});
+};
+
+const _writeFile = (dir, name, data) => {
+	return new Promise((resolve, reject) => {
+		if (
+			typeof dir != "string" ||
+			dir == "" ||
+			typeof name != "string" ||
+			name == ""
+		) {
+			reject({
+				error: new Error(
+					"_writeFile requires the file path to be specified in [string] format."
+				),
+				message: "No file path specified.",
+			});
+			return;
+		}
+		_createDir(dir)
+			.then(() => {
+				fs.writeFile(_parseRoot(`${dir}/${name}`), data, (error) => {
+					if (error)
+						reject({
+							error: error,
+							message: "Error writing file content.",
+						});
+					else resolve(true);
+				});
+			})
+			.catch((e) => {
+				reject({
+					error: e,
+					message: "Error writing file content.",
+				});
+			});
+	});
+};
+
+const _readFile = (file) => {
+	return new Promise((resolve, reject) => {
+		if (typeof file != "string" || file == "") {
+			reject({
+				error: new Error(
+					"_readFile requires the file path to be specified in [string] format."
+				),
+				message: "No file path specified.",
+			});
+			return;
+		}
+		_existsFile(file)
+			.then((ex) => {
+				if (ex)
+					fs.readFile(_parseRoot(file), "utf8", (error, data) => {
+						if (error)
+							reject({
+								error: error,
+								message: "Error reading file content.",
+							});
+						else resolve(data);
+					});
+				else
+					reject({
+						error: new Error(`The file [${file}] does not exist.`),
+						message: "Error reading file content.",
+					});
+			})
+			.catch((e) => {
+				reject({
+					error: e,
+					message: "Error reading file content.",
+				});
+			});
+	});
+};
+
+const _itemType = (root) => {
+	return new Promise((resolve, reject) => {
+		fs.stat(_parseRoot(root), (err, stats) => {
 			if (err) {
 				reject(err);
-				win.log.error({
-					icon: "description",
-					title: "Content",
-					content:
-						"It was not possible to determine the type of content",
-					advanced: err,
-				});
 				return;
 			}
 
@@ -330,90 +282,262 @@ const itemType = (root) => {
 	});
 };
 
-/**
- * %--------------------------------[ userfilesystem(void):Promise ]
- * !---No exportado
- * ?---Verifica si existe la carpeta de archivos de usuario, si no, la crea.
- * return Promise->then(flag:string-<Success)
- **/
-const createDir = (dir) => {
-	dir = parseDir(dir);
+const _deleteFile = (file) => {
 	return new Promise((resolve, reject) => {
-		if (!isBuild()) {
-			reject(new Error("No directory name specified."));
-			return;
-		}
-		if (typeof dir != "string" || dir == "") {
-			reject(new Error("No directory name specified."));
-			win.log.error({
-				icon: "folder",
-				title: "Directory",
-				content: "No directory name specified.",
-				advanced: err,
+		if (typeof file != "string" || file == "") {
+			reject({
+				error: new Error(
+					"_readFile requires the file path to be specified in [string] format."
+				),
+				message: "No file path specified.",
 			});
 			return;
 		}
-		fs.access(`${dir}`, (error) => {
-			if (error) {
-				fs.mkdir(`${dir}`, { recursive: true }, (err) => {
-					if (err) {
-						reject(err);
-						win.log.error({
-							icon: "folder",
-							title: "Directory",
-							content: "The directory could not be created.",
-							advanced: err,
+		_existsFile(file)
+			.then((ex) => {
+				if (ex) {
+					_itemType(file)
+						.then((type) => {
+							if (type == 1) {
+								fs.unlink(_parseRoot(file), (error) => {
+									if (error)
+										reject({
+											error: error,
+											message: "Error deleting file.",
+										});
+									else resolve(true);
+								});
+							} else
+								reject({
+									error: new Error(
+										`It was not possible to delete because [${file}] is not a file.`
+									),
+									message: "Error deleting file.",
+								});
+						})
+						.catch((e) => {
+							reject({
+								error: e,
+								message: "Error deleting file.",
+							});
 						});
-					} else resolve("Creado!");
+				} else
+					reject({
+						error: new Error(`The file [${file}] does not exist`),
+						message: "Error deleting file.",
+					});
+			})
+			.catch((e) => {
+				reject({
+					error: e,
+					message: "Error deleting file.",
 				});
-			} else resolve("Creado!");
-		});
-	});
-};
-
-const existsDir = (dir) => {
-	dir = parseDir(dir);
-	return new Promise((resolve, reject) => {
-		if (!isBuild()) {
-			reject(new Error("No directory name specified."));
-			return;
-		}
-		if (typeof dir != "string" || dir == "") {
-			reject(new Error("No directory name specified."));
-			win.log.error({
-				icon: "folder",
-				title: "Directory",
-				content: "No directory name specified.",
-				advanced: err,
 			});
-			return;
-		}
-		fs.access(`${dir}`, (error) => {
-			if (error) reject("No existe");
-			else resolve("Existe!");
-		});
 	});
 };
 
-//$--------------------------------------------------------------------------Funciones expuestas
+//$--------------------------------------------------------------------------Funciones Front-End
+const existsDir = (dir) => {
+	_existsDir(dir)
+		.then((ex) => {
+			if (ex)
+				win.log.success({
+					icon: "folder_open",
+					title: "Folder",
+					content: `The folder exists.`,
+					advanced: _parseRoot(dir),
+				});
+			else
+				win.log.warning({
+					icon: "folder_open",
+					title: "Folder",
+					content: `The folder not exists.`,
+					advanced: _parseRoot(dir),
+				});
+			win.send("folder-exists", ex);
+		})
+		.catch((e) => {
+			win.log.error({
+				icon: "folder_open",
+				title: "Folder",
+				content: e.message,
+				advanced: e.error,
+			});
+			win.send("folder-exists", false);
+		});
+};
+
+const existsFile = (dir) => {
+	_existsFile(dir)
+		.then((ex) => {
+			if (ex)
+				win.log.success({
+					icon: "draft",
+					title: "File",
+					content: `The file exists.`,
+					advanced: _parseRoot(dir),
+				});
+			else
+				win.log.warning({
+					icon: "draft",
+					title: "File",
+					content: `The file not exists.`,
+					advanced: _parseRoot(dir),
+				});
+			win.send("file-exists", ex);
+		})
+		.catch((e) => {
+			win.log.error({
+				icon: "draft",
+				title: "File",
+				content: e.message,
+				advanced: e.error,
+			});
+			win.send("file-exists", false);
+		});
+};
+
+const listDir = (dir) => {
+	_listDir(dir)
+		.then((items) => {
+			win.log.success({
+				icon: "folder_open",
+				title: "Folder",
+				content: `The contents have been successfully listed.`,
+				advanced: _parseRoot(dir),
+			});
+			win.send("folder-list", items);
+		})
+		.catch((e) => {
+			win.log.error({
+				icon: "folder_open",
+				title: "Folder",
+				content: e.message,
+				advanced: e.error,
+			});
+			win.send("folder-list", null);
+		});
+};
+
+const createDir = (dir) => {
+	_createDir(dir)
+		.then(() => {
+			win.log.success({
+				icon: "folder_open",
+				title: "Folder",
+				content: `The directory was created successfully.`,
+				advanced: _parseRoot(dir),
+			});
+			win.send("folder-create", true);
+		})
+		.catch((e) => {
+			win.log.error({
+				icon: "folder_open",
+				title: "Folder",
+				content: e.message,
+				advanced: e.error,
+			});
+			win.send("folder-create", false);
+		});
+};
+
+const writeFile = (dir, name, data) => {
+	_writeFile(dir, name, data)
+		.then(() => {
+			win.log.success({
+				icon: "edit_document",
+				title: "File write",
+				content: `The file is written correctly.`,
+				advanced: _parseRoot(dir),
+			});
+			win.send("file-write", true);
+		})
+		.catch((e) => {
+			win.log.error({
+				icon: "edit_document",
+				title: "File write",
+				content: e.message,
+				advanced: e.error,
+			});
+			win.send("file-write", false);
+		});
+};
+
+const readFile = (file) => {
+	_readFile(file)
+		.then((data) => {
+			win.log.success({
+				icon: "description",
+				title: "File read",
+				content: `The contents of the file were read correctly.`,
+				advanced: _parseRoot(file),
+			});
+			win.send("file-read", data);
+		})
+		.catch((e) => {
+			win.log.error({
+				icon: "description",
+				title: "File read",
+				content: e.message,
+				advanced: e.error,
+			});
+			win.send("file-read", null);
+		});
+};
+
+const deleteFile = (file) => {
+	_deleteFile(file)
+		.then(() => {
+			win.log.success({
+				icon: "scan_delete",
+				title: "File delete",
+				content: `The file was deleted successfully.`,
+				advanced: _parseRoot(file),
+			});
+			win.send("file-delete", data);
+		})
+		.catch((e) => {
+			win.log.error({
+				icon: "scan_delete",
+				title: "File delete",
+				content: e.message,
+				advanced: e.error,
+			});
+			win.send("file-delete", null);
+		});
+};
+
+//export--------------------------------------------------------------------------> Desde la GUI
+const listeners = () => {
+	win = global.window.utilities;
+
+	win.on("folder-exists", (e, data) => existsDir(data));
+	win.on("folder-list", (e, data) => listDir(data));
+	win.on("folder-create", (e, data) => createDir(data));
+
+	win.on("file-exists", (e, data) => existsFile(data));
+	win.on("file-write", (e, data) =>
+		writeFile(data.dir, data.name, data.data)
+	);
+	win.on("file-read", (e, data) => readFile(data));
+	win.on("file-delete", (e, data) => deleteFile(data));
+};
+
+//export-------------------------------------------------------------------->Funciones expuestas
 const utilities = {
-	parseDir,
-	existsFile,
-	list,
-	write,
-	read,
-	del,
-	createDir,
-	existsDir,
+	root: { parse: _parseRoot },
+	dir: {
+		exists: _existsDir,
+		list: _listDir,
+		create: _createDir,
+	},
+	exists: _existsFile,
+	write: _writeFile,
+	read: _readFile,
+	type: _itemType,
+	delete: _deleteFile,
 };
-
-//export------------------------------------------------> Funciones disponible hacia el exterior
-const callFromGUI = () => {
-	if (!isBuild()) return;
-};
-
 module.exports = {
-	build,
-	callFromGUI,
+	listeners,
 	utilities,
 };

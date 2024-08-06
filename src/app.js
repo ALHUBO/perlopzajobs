@@ -11,38 +11,28 @@
 
 //import-------------------------> Necesario Execution Node
 //var>---------------------------$ Node Execution Globals
-const window = require("./resources/window"),
-	file = require("./resources/file"),
-	encrypt = require("./resources/encrypt"),
-	access = require("./resources/access"),
-	udp = require("./daemon/udp"),
-	db = require("./daemon/db");
+global.window = require("./resources/window");
+global.config = require("./resources/config");
+global.file = require("./resources/file");
+global.encrypt = require("./resources/encrypt");
+global.access = require("./resources/access");
+global.udp = require("./daemon/udp");
+global.db = require("./daemon/db");
 
-window
+global.window
 	.build({})
 	.then(() => {
-		file.build({
-			req_win: window.utilities,
-		});
-		access.build({
-			req_file: file.utilities,
-			req_encrypt: encrypt,
-			req_win: window.utilities,
-		});
-		udp.build({
-			req_win: window.utilities,
-		});
-		db.build({
-			req_win: window.utilities,
-		});
+		global.config.listeners();
+		global.file.listeners();
+		global.access.listeners();
 
-		file.callFromGUI();
-		access.callFromGUI();
-		udp.callFromGUI();
-		db.callFromGUI();
+		// access.callFromGUI();
+		// udp.callFromGUI();
+		// db.callFromGUI();
 
-		window.load();
+		global.window.load();
 	})
 	.catch((e) => {
+		console.log("No fue posible construir el programa.");
 		console.log(e);
 	});

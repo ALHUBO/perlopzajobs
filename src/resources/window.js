@@ -35,7 +35,7 @@ var wind = {
 		h: 0,
 	},
 	environment: "development", //?---Tipo de aplicacion [ development | production ]
-	devtools: false, //?---Show dev tools?
+	devtools: true, //?---Show dev tools?
 	UIMode: "system", //?---Tipo de renderizado [ dark | light | system ]
 }; //?---Propiedades de la Window
 
@@ -61,7 +61,13 @@ var backConfig = {
 			driver: "",
 		},
 	},
+	access: {
+		exists: null,
+		can: false,
+	},
 };
+
+var access = null;
 
 //%------------------------------------------------------------------------------------Utilities
 const config = {
@@ -108,7 +114,9 @@ const on = (channel, fnc) => {
  * @param {string} environment("development") Tipo de environment [ development | production ]
  * return Promise->then(flag:object-void-<Success)
  **/
-const build = ({ environment = "development" }) => {
+const build = ({ environment = "development", req_access }) => {
+	access = req_access;
+
 	return new Promise((resolve, reject) => {
 		try {
 			wind.environment = environment; //?--- Establece el environment
@@ -400,7 +408,10 @@ const GUI_Call_Window = () => {
 			//save
 		} else {
 			//get
-			send("app-config", { ...backConfig });
+			access.exists().then((r) => {
+				backConfig.access.exists = r;
+				send("app-config", { ...backConfig });
+			});
 		}
 	});
 };
