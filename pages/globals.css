@@ -562,6 +562,10 @@ video {
   z-index: 1000;
 }
 
+.z-50 {
+  z-index: 50;
+}
+
 .m-0 {
   margin: 0px;
 }
@@ -615,10 +619,6 @@ video {
   height: 2rem;
 }
 
-.h-screen {
-  height: 100vh;
-}
-
 .w-0 {
   width: 0px;
 }
@@ -645,6 +645,11 @@ video {
 
 .w-full {
   width: 100%;
+}
+
+.w-min {
+  width: -moz-min-content;
+  width: min-content;
 }
 
 .max-w-\[30ch\] {
@@ -735,6 +740,10 @@ video {
 
 .gap-6 {
   gap: 1.5rem;
+}
+
+.gap-\[3vmin\] {
+  gap: 3vmin;
 }
 
 .overflow-hidden {
@@ -980,6 +989,11 @@ video {
   padding-right: 20%;
 }
 
+.px-\[5\%\] {
+  padding-left: 5%;
+  padding-right: 5%;
+}
+
 .py-1 {
   padding-top: 0.25rem;
   padding-bottom: 0.25rem;
@@ -1018,8 +1032,16 @@ video {
   padding-right: 1.5rem;
 }
 
+.pt-\[3vmin\] {
+  padding-top: 3vmin;
+}
+
 .text-center {
   text-align: center;
+}
+
+.text-justify {
+  text-align: justify;
 }
 
 .text-2xl {
@@ -1413,6 +1435,12 @@ ul {
   100% {
     transform: scaleY(-1) rotate(-135deg);
   }
+}
+
+.hover\:scale-110:hover {
+  --tw-scale-x: 1.1;
+  --tw-scale-y: 1.1;
+  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
 }
 
 .hover\:scale-125:hover {

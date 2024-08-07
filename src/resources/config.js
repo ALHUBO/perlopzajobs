@@ -37,6 +37,8 @@ var backConfig = {
 	access: {
 		exists: null,
 		can: false,
+		wait: false,
+		pass: "",
 	},
 };
 
@@ -58,35 +60,43 @@ const _exists = () => {
 	});
 };
 
-const _save = (shifer) => {
-	let pass =
-		shifer === null ? encrypt.ASCII2sha256(native.timestamp()) : shifer;
-	encrypt
-		.genCifer(pass)
-		.then((cifer) => {
-			file.write(
-				"./dtx",
-				"conf.ahb",
-				encrypt.CiferSMS(btoa(JSON.stringify(backConfig)), cifer)
-			)
-				.then(() => {
-					resolve(shifer);
-				})
-				.catch((e) => {
-					reject({
-						error: e,
-						message:
-							"An error occurred while trying to save the password.",
+const _save = ({ config, shifer }) => {
+	return new Promise((resolve, reject) => {
+		backConfig = { ...config };
+		let pass =
+			shifer === null ? encrypt.ASCII2sha256(native.timestamp()) : shifer;
+		encrypt
+			.genCifer(pass)
+			.then((cifer) => {
+				file.write(
+					"./dtx",
+					"conf.ahb",
+					native.hex2codexBin(
+						encrypt.CiferSMS(
+							btoa(JSON.stringify(backConfig)),
+							cifer
+						)
+					)
+				)
+					.then(() => {
+						resolve(pass);
+					})
+					.catch((e) => {
+						reject({
+							error: e,
+							message:
+								"An error occurred while trying to save the password.",
+						});
 					});
+			})
+			.catch((e) => {
+				reject({
+					error: e,
+					message:
+						"An error occurred while trying to encrypt the password.",
 				});
-		})
-		.catch((e) => {
-			reject({
-				error: e,
-				message:
-					"An error occurred while trying to encrypt the password.",
 			});
-		});
+	});
 };
 
 const _load = (shifer) => {
@@ -101,10 +111,15 @@ const _load = (shifer) => {
 					encrypt
 						.genCifer(shifer)
 						.then((cifer) => {
-							file.read("./dtx/access.ahb")
+							file.read("./dtx/conf.ahb")
 								.then((data) => {
 									backConfig = JSON.parse(
-										atob(encrypt.DeciferSMS(data, cifer))
+										atob(
+											encrypt.DeciferSMS(
+												native.codexBin2hex(data),
+												cifer
+											)
+										)
 									);
 									resolve({ ...backConfig });
 								})
@@ -136,8 +151,8 @@ const _load = (shifer) => {
 };
 
 //$--------------------------------------------------------------------------Funciones Front-End
-const save = () => {
-	_save()
+const save = (responde) => {
+	_save(responde)
 		.then((shifer) => {
 			win.log.success({
 				icon: "settings",
@@ -207,6 +222,48 @@ const load = (shifer) => {
 		});
 };
 
+const ipSave = (responde) => {
+	_save(responde)
+		.then((shifer) => {
+			win.log.success({
+				icon: "router",
+				title: "Server IP",
+				content: "Configuration saved.",
+			});
+			win.send("config-ip-save", true);
+		})
+		.catch((e) => {
+			win.log.error({
+				icon: "router",
+				title: "Server IP",
+				content: e.message,
+				advanced: e.error,
+			});
+			win.send("config-ip-save", false);
+		});
+};
+
+const udpSave = (responde) => {
+	_save(responde)
+		.then((shifer) => {
+			win.log.success({
+				icon: "dns",
+				title: "Server UDP",
+				content: "Configuration saved.",
+			});
+			win.send("config-udp-save", true);
+		})
+		.catch((e) => {
+			win.log.error({
+				icon: "dns",
+				title: "Server UDP",
+				content: e.message,
+				advanced: e.error,
+			});
+			win.send("config-udp-save", false);
+		});
+};
+
 //export--------------------------------------------------------------------------> Desde la GUI
 const listeners = () => {
 	encrypt = global.encrypt;
@@ -216,6 +273,8 @@ const listeners = () => {
 
 	win.on("config-save", (e, data) => save(data));
 	win.on("config-load", (e, data) => load(data));
+	win.on("config-ip-save", (e, data) => ipSave(data));
+	win.on("config-udp-save", (e, data) => udpSave(data));
 };
 
 //export-------------------------------------------------------------------->Funciones expuestas

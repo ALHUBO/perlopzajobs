@@ -326,6 +326,21 @@ const log = {
 	},
 };
 
+const _nicGet = () => {
+	const networkInterfaces = os.networkInterfaces();
+	const int = {};
+	for (const [name, interfaces] of Object.entries(networkInterfaces)) {
+		for (const iface of interfaces) {
+			if ("IPv4" !== iface.family || iface.internal !== false) {
+				// ignorar IPv6 y interfaces internas (localhost)
+				continue;
+			}
+			int[name] = iface.address;
+		}
+	}
+	send("nic-get", int);
+};
+
 /**
  * %--------------------------------[ GUI_Call_Window(void):void ]
  * !---No Exportado
@@ -388,20 +403,7 @@ const GUI_Call_Window = () => {
 		log.warning(data);
 	});
 
-	on("nic-get", (e, data) => {
-		const networkInterfaces = os.networkInterfaces();
-		const int = {};
-		for (const [name, interfaces] of Object.entries(networkInterfaces)) {
-			for (const iface of interfaces) {
-				if ("IPv4" !== iface.family || iface.internal !== false) {
-					// ignorar IPv6 y interfaces internas (localhost)
-					continue;
-				}
-				int[name] = iface.address;
-			}
-		}
-		send("nic-get", int);
-	});
+	on("nic-get", (e, data) => _nicGet());
 
 	on("app-config", (e, data) => {
 		if (data) {

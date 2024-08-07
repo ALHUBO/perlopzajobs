@@ -4,7 +4,7 @@ import Log from "./component/log";
 export default function Console({ safeArea = 0, frontEnd, setFrontEnd }) {
 	return (
 		<div
-			className=" overflow-hidden z-[1000] w-full bg-slate-50 border-t-2 border-t-slate-300 flex flex-col duration-300 "
+			className=" overflow-hidden z-[1000] w-full bg-slate-50 border-t-2 border-t-slate-300 flex flex-col "
 			style={{
 				height: frontEnd.console.open
 					? `calc(100vh - ${safeArea}px)`
@@ -56,7 +56,7 @@ export default function Console({ safeArea = 0, frontEnd, setFrontEnd }) {
 							</button>
 						</div>
 					)}
-					<div className="flex-1  overflow-y-auto overflow-x-hidden">
+					<div className="flex-1 overflow-y-auto overflow-x-hidden px-[5%] flex flex-col gap-[3vmin] pt-[3vmin]">
 						{Object.keys(frontEnd.console.content).length <= 0 && (
 							<div className="text-lg text-slate-400 text-center py-6">
 								No hay mensajes de consola.

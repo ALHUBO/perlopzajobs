@@ -13,6 +13,11 @@ export default function Bartitle({
 	const logOut = () => {
 		backEnd.title = "Ingresar Contraseña";
 		backEnd.access.can = false;
+		app.send("log-info", {
+			icon: "logout",
+			title: "Log out",
+			content: "The session has been closed by the user.",
+		});
 		setBackEnd({ ...backEnd });
 	};
 	useEffect(() => {

@@ -65,6 +65,8 @@ export default function Layout({ children }) {
 		access: {
 			exists: null,
 			can: false,
+			pass: "",
+			wait: false,
 		},
 	});
 
@@ -119,9 +121,15 @@ export default function Layout({ children }) {
 	useEffect(() => {
 		app.on("config-load", (response) => {
 			if (response.error) {
-				console.log(response);
 				setErConf((erConf = response.sms));
 			} else setBackEnd({ ...response.sms });
+		});
+
+		app.on("config-save", (response) => {
+			if (!response.error) {
+				localStorage.setItem("config.shifer", response.sms);
+				setBackEnd({ ...backEnd });
+			} else console.log(response);
 		});
 
 		app.send("config-load", localStorage.getItem("config.shifer"));

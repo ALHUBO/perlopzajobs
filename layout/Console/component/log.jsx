@@ -4,7 +4,7 @@ export default function Log({ data }) {
 	return (
 		<div
 			className={
-				"border-2 rounded-lg px-2 " +
+				"border-2 rounded-lg px-2 duration-200 hover:scale-110 cursor-pointer " +
 				(data.type == "default"
 					? " bg-slate-100 border-slate-400"
 					: data.type == "success"

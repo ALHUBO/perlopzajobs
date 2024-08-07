@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import Button from "../../../components/Button";
+import Icon from "../../../components/Icon";
+import native from "../../../src/resources/native";
 
 export default function Udp({ backEnd, setBackEnd }) {
 	let [editing, setEditing] = useState(false);
@@ -11,24 +13,19 @@ export default function Udp({ backEnd, setBackEnd }) {
 	});
 
 	const [port, setPort] = useState({
-		E: { old: "", act: "" },
-		S: {
-			old: "",
-			act: "",
-		},
+		E: "",
+		S: "",
 	});
 	const restablish = () => {
-		port.E.act = backEnd.udp.portE;
-		port.E.old = backEnd.udp.portE;
-		port.S.act = backEnd.udp.portS;
-		port.S.old = backEnd.udp.portS;
+		port.E = backEnd.udp.portE;
+		port.S = backEnd.udp.portS;
 		setPort({ ...port });
 	};
 	const saveAs = () => {
-		if (isNaN(parseInt(port.E.act))) port.E.act = 56789;
+		if (!native.isPort(port.E)) port.E = 56789;
+		if (!native.isPort(port.S)) port.S = 56790;
 
-		if (isNaN(parseInt(port.S.act))) port.S.act = 56790;
-		if (parseInt(port.E.act) == parseInt(port.S.act)) {
+		if (parseInt(port.E) == parseInt(port.S)) {
 			setNotif({
 				type: 2,
 				ico: "",
@@ -38,8 +35,20 @@ export default function Udp({ backEnd, setBackEnd }) {
 		}
 
 		if (
-			parseInt(port.E.act) == parseInt(backEnd.ws.port) ||
-			parseInt(port.S.act) == parseInt(backEnd.ws.port)
+			parseInt(port.S) == parseInt(backEnd.udp.data.port.S) &&
+			parseInt(port.E) == parseInt(backEnd.udp.data.port.E)
+		) {
+			setNotif({
+				type: 1,
+				ico: "",
+				sms: "Ya esta guardada la configuración",
+			});
+			return;
+		}
+
+		if (
+			parseInt(port.E) == parseInt(backEnd.ws.data.port) ||
+			parseInt(port.S) == parseInt(backEnd.ws.data.port)
 		) {
 			setNotif({
 				type: 2,
@@ -48,9 +57,7 @@ export default function Udp({ backEnd, setBackEnd }) {
 			});
 			return;
 		}
-		const expReg =
-			/^((25[0-5]{1}|2[0-4][0-9]|1[0-9]{2}|[0-9]?[0-9])\.){3}(25[0-5]{1}|2[0-4][0-9]|1[0-9]{2}|[0-9]?[0-9])$/;
-		if (!expReg.test(backEnd.server)) {
+		if (!native.isIP(backEnd.ip)) {
 			setNotif({
 				type: 2,
 				ico: "",
@@ -60,11 +67,9 @@ export default function Udp({ backEnd, setBackEnd }) {
 		}
 
 		setSaving((saving = true));
-		console.log("send");
-		app.send("udp-save", {
-			ip: backEnd.server,
-			portE: port.E.act,
-			portS: port.S.act,
+		app.send("config-udp-save", {
+			config: { ...backEnd },
+			shifer: localStorage.getItem("config.shifer"),
 		});
 	};
 
@@ -95,75 +100,105 @@ export default function Udp({ backEnd, setBackEnd }) {
 			console.log("response");
 			saved(response);
 		});
+		setPort({
+			E: backEnd.udp.data.port.E,
+			S: backEnd.udp.data.port.S,
+		});
 	}, []);
 	return (
 		<div className=" border-2 border-slate-500 rounded-lg px-4 py-2 w-full">
-			<div className="text-2xl text-slate-700">Server UDP</div>
-			<div>
-				[
-				{`Escuchar: ${
-					!isNaN(parseInt(port.E.act)) ? port.E.act : "56789"
-				} Enviar: ${
-					!isNaN(parseInt(port.S.act)) ? port.S.act : "56790"
-				}`}
-				]
+			<div className="text-2xl text-slate-700 flex justify-start items-center gap-1">
+				<Icon id="dns" />
+				Server UDP
+				<div className="group">
+					<div className="text-base flex justify-center items-center cursor-pointer">
+						<Icon id="help" />
+					</div>
+					<div className="h-0 w-0 overflow-visible hidden group-hover:block">
+						<div className="relative z-50 bg-white border-2 border-slate-800 w-min text-justify px-4 py-2 rounded-lg shadow text-sm">
+							Elige puertos dinamicos de preferencia.
+						</div>
+					</div>
+				</div>
+			</div>
+			<div className="flex justify-start items-center gap-4">
+				<div className="flex justify-start items-center gap-1">
+					{"[ "}
+					<div className="font-bold flex justify-center items-center gap-1">
+						<Icon id="hearing" />
+						Escuchar:
+					</div>
+					<div>{!isNaN(parseInt(port.E)) ? port.E : "56789"}</div>
+					{" ]"}
+				</div>
+				<div className="flex justify-start items-center gap-1">
+					{"[ "}
+					<div className="font-bold flex justify-center items-center gap-1">
+						<Icon id="send" />
+						Enviar:
+					</div>
+					<div>{!isNaN(parseInt(port.S)) ? port.S : "56789"}</div>
+					{" ]"}
+				</div>
 			</div>
 			{editing ? (
 				<>
-					<div className="font-bold text-lg">Escuchar:</div>
-					{!isNaN(parseInt(port.E.act)) && (
+					<div className="font-bold text-lg flex justify-start items-center gap-1">
+						<Icon id="hearing" />
+						Escuchar:
+					</div>
+					{!isNaN(parseInt(port.E)) && (
 						<div>
-							{parseInt(port.E.act) >= 0 &&
-							parseInt(port.E.act) < 1024
+							{parseInt(port.E) >= 0 && parseInt(port.E) < 1024
 								? "Este es un puerto bien conocido. Es muy posible que este en uso"
-								: parseInt(port.E.act) >= 1024 &&
-								  parseInt(port.E.act) < 49151
+								: parseInt(port.E) >= 1024 &&
+								  parseInt(port.E) < 49151
 								? "Este es un puerto registrado. Es probable que este ocupado."
-								: "Este es un puerto dinámicos o privados. Es muy problable que este libre."}
+								: "Este es un puerto dinámico o privado. Es muy problable que este libre."}
 						</div>
 					)}
 					<div>
 						<input
 							type="text"
 							placeholder="Puerto escucha (56789)"
-							value={port.E.act == "56789" ? "" : port.E.act}
+							value={port.E == "56789" ? "" : port.E}
 							onChange={(e) => {
-								port.E.act = e.target.value;
-								port.E.act = parseInt(port.E.act);
+								port.E = e.target.value;
+								port.E = parseInt(port.E);
 
-								if (isNaN(parseInt(port.E.act)))
-									port.E.act = "";
-								if (port.E.act < 0) port.E.act = 0;
-								if (port.E.act > 65535) port.E.act = 65535;
+								if (isNaN(parseInt(port.E))) port.E = "";
+								if (port.E < 0) port.E = 0;
+								if (port.E > 65535) port.E = 65535;
 								setPort({ ...port });
 							}}
 						/>
 					</div>
-					<div className="font-bold text-lg">Enviar:</div>
-					{!isNaN(parseInt(port.S.act)) && (
+					<div className="font-bold text-lg">
+						<Icon id="send" />
+						Enviar:
+					</div>
+					{!isNaN(parseInt(port.S)) && (
 						<div>
-							{parseInt(port.S.act) >= 0 &&
-							parseInt(port.S.act) < 1024
+							{parseInt(port.S) >= 0 && parseInt(port.S) < 1024
 								? "Este es un puerto bien conocido. Es muy posible que este en uso"
-								: parseInt(port.S.act) >= 1024 &&
-								  parseInt(port.S.act) < 49151
+								: parseInt(port.S) >= 1024 &&
+								  parseInt(port.S) < 49151
 								? "Este es un puerto registrado. Es probable que este ocupado."
-								: "Este es un puerto dinámicos o privados. Es muy problable que este libre."}
+								: "Este es un puerto dinámico o privado. Es muy problable que este libre."}
 						</div>
 					)}
 					<div>
 						<input
 							type="text"
 							placeholder="Puerto escucha (56790)"
-							value={port.S.act == "56790" ? "" : port.S.act}
+							value={port.S == "56790" ? "" : port.S}
 							onChange={(e) => {
-								port.S.act = e.target.value;
-								port.S.act = parseInt(port.S.act);
+								port.S = e.target.value;
+								port.S = parseInt(port.S);
 
-								if (isNaN(parseInt(port.S.act)))
-									port.S.act = "";
-								if (port.S.act < 0) port.S.act = 0;
-								if (port.S.act > 65535) port.S.act = 65535;
+								if (isNaN(parseInt(port.S))) port.S = "";
+								if (port.S < 0) port.S = 0;
+								if (port.S > 65535) port.S = 65535;
 								setPort({ ...port });
 							}}
 						/>
@@ -175,8 +210,8 @@ export default function Udp({ backEnd, setBackEnd }) {
 									...notif,
 									sms: "",
 								});
-								port.E.act = port.E.old;
-								port.S.act = port.S.old;
+								port.E = backEnd.udp.data.port.E;
+								port.S = backEnd.udp.data.port.S;
 								setPort({ ...port });
 								setEditing(false);
 							}}
@@ -187,9 +222,17 @@ export default function Udp({ backEnd, setBackEnd }) {
 						<Button
 							onClick={saveAs}
 							disabled={
-								(parseInt(port.E.act) == parseInt(port.E.old) &&
-									parseInt(port.S.act) ==
-										parseInt(port.S.old)) ||
+								!native.isPort(port.E) ||
+								!native.isPort(port.S) ||
+								parseInt(port.S) == parseInt(port.E) ||
+								parseInt(port.S) ==
+									parseInt(backEnd.ws.data.port) ||
+								parseInt(port.E) ==
+									parseInt(backEnd.ws.data.port) ||
+								(parseInt(port.S) ==
+									parseInt(backEnd.udp.data.port.S) &&
+									parseInt(port.E) ==
+										parseInt(backEnd.udp.data.port.E)) ||
 								saving
 							}
 						>
@@ -201,7 +244,8 @@ export default function Udp({ backEnd, setBackEnd }) {
 				<>
 					<div>
 						<div className="flex justify-start items-center gap-2">
-							<div>
+							<div className="flex justify-center items-center gap-1">
+								<Icon id="dynamic_form" />
 								<span className="font-bold">Status:</span>{" "}
 								{backEnd.udp.stablished
 									? "Conectado"
@@ -224,11 +268,30 @@ export default function Udp({ backEnd, setBackEnd }) {
 									onClick={() => {
 										app.send("udp-start", null);
 									}}
-									disabled={backEnd.server == "" || saving}
+									disabled={
+										backEnd.ip == "" ||
+										saving ||
+										!native.isPort(
+											backEnd.udp.data.port.E
+										) ||
+										!native.isPort(
+											backEnd.udp.data.port.S
+										) ||
+										backEnd.udp.data.port.S ==
+											backEnd.udp.data.port.E
+									}
+									className="flex justify-center items-center gap-1"
 								>
+									<Icon
+										id={
+											backEnd.udp.stablished
+												? "cloud_download"
+												: "cloud_upload"
+										}
+									/>
 									{backEnd.udp.stablished
-										? "Desconectar"
-										: "Conectar"}
+										? "Desactivar"
+										: "Activar"}
 								</Button>
 							)}
 						</div>
@@ -243,11 +306,13 @@ export default function Udp({ backEnd, setBackEnd }) {
 								setEditing(true);
 							}}
 							disabled={
-								backEnd.server == "" ||
+								backEnd.ip == "" ||
 								saving ||
 								backEnd.udp.stablished
 							}
+							className="flex justify-center items-center gap-1"
 						>
+							<Icon id="rule_settings" />
 							Configurar
 						</Button>
 					</div>

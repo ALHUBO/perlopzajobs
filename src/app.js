@@ -26,7 +26,6 @@ global.window
 		global.file.listeners();
 		global.access.listeners();
 
-		// access.callFromGUI();
 		// udp.callFromGUI();
 		// db.callFromGUI();
 

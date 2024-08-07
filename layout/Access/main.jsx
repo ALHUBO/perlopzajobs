@@ -20,8 +20,17 @@ export default function Access({
 			...notf,
 		});
 		if (backEnd.access.wait) return false;
-		if (typeof backEnd.access.pass != "string" || backEnd.access.pass == "")
+		if (
+			typeof backEnd.access.pass != "string" ||
+			backEnd.access.pass == ""
+		) {
+			setNotf({
+				type: 1,
+				sms: "Ingresa una contraseña",
+				ico: "key",
+			});
 			return false;
+		}
 
 		backEnd.access.wait = true;
 		setBackEnd({ ...backEnd });
@@ -32,89 +41,81 @@ export default function Access({
 		return true;
 	};
 
-	useEffect(() => {
-		app.on("access-exists", (data) => {
-			if (data) frontEnd.title = "Ingresa contraseña";
-			else frontEnd.title = "Crear una contraseña";
-			backEnd.access.exists = data;
-			setFrontEnd({ ...frontEnd });
+	const _exists = (ex) => {
+		if (ex) frontEnd.title = "Ingresa contraseña";
+		else frontEnd.title = "Crear una contraseña";
+		backEnd.access.exists = ex;
+		setFrontEnd({ ...frontEnd });
+		setBackEnd({ ...backEnd });
+	};
+
+	const _create = (response) => {
+		if (response) {
+			setNotf({
+				type: 0,
+				sms: "Se ha creado la nueva contraseña correctamente.",
+				ico: "key",
+			});
+			setTimeout(() => {
+				notf.sms = "";
+				setNotf({
+					...notf,
+				});
+				frontEnd.title = "Ingresa contraseña";
+				setFrontEnd({ ...frontEnd });
+				backEnd.access.wait = false;
+				backEnd.access.pass = "";
+				backEnd.access.exists = true;
+				setBackEnd({ ...backEnd });
+				app.send("config-save", {
+					config: backEnd,
+					shifer: localStorage.getItem("config.shifer"),
+				});
+			}, 2000);
+		} else {
+			setNotf({
+				type: 2,
+				sms: "No fue posible crear la contraseña",
+				ico: "key",
+			});
+			backEnd.access.wait = false;
 			setBackEnd({ ...backEnd });
-		});
-		app.on("access-create", (data) => {
-			let error = "";
-			if (data.error == 1)
-				error = "La contraseña no cumple los requisitos.";
-			else if (data.error == 2)
-				error = "No fue posible guardar la contraseña.";
-			else if (data.error == 3)
-				error = "No fue posible encriptar la contraseña.";
+		}
+	};
 
-			if (error != "") {
+	const _enter = (response) => {
+		if (response) {
+			setNotf({
+				type: 0,
+				sms: "¡Bienvenido!",
+				ico: "key",
+			});
+			setTimeout(() => {
+				notf.sms = "";
 				setNotf({
-					type: 2,
-					sms: error,
-					ico: "key",
+					...notf,
 				});
+
+				backEnd.access.can = "asdasd";
 				backEnd.access.wait = false;
+				backEnd.access.pass = "";
 				setBackEnd({ ...backEnd });
-			} else {
-				setNotf({
-					type: 0,
-					sms: "Se ha creado la nueva contraseña correctamente.",
-					ico: "key",
-				});
-				setTimeout(() => {
-					notf.sms = "";
-					setNotf({
-						...notf,
-					});
-					frontEnd.title = "Ingresa contraseña";
-					setFrontEnd({ ...frontEnd });
-					backEnd.access.wait = false;
-					if (data.error == 0) backEnd.access.pass = "";
-					setBackEnd({ ...backEnd });
-				}, 2000);
-			}
-		});
-		app.on("access-enter", (data) => {
-			let error = "";
-			if (data.error == 1)
-				error = "No se ingresó una contraseña correctamente.";
-			else if (data.error == 2) error = "La contraseña es incorrecta.";
-			else if (data.error == 3)
-				error = "No fue posible leer la contraseña.";
-			else if (data.error == 4)
-				error = "No fue posible desencriptar la contraseña.";
+			}, 1000);
+		} else {
+			setNotf({
+				type: 2,
+				sms: "No es la contraseña correcta",
+				ico: "key",
+			});
+			backEnd.access.wait = false;
+			setBackEnd({ ...backEnd });
+		}
+	};
 
-			if (error != "") {
-				setNotf({
-					type: 2,
-					sms: error,
-					ico: "key",
-				});
-
-				backEnd.access.wait = false;
-				backEnd.access.can = false;
-				setBackEnd({ ...backEnd });
-			} else {
-				setNotf({
-					type: 0,
-					sms: "¡Bienvenido!",
-					ico: "key",
-				});
-				setTimeout(() => {
-					notf.sms = "";
-					setNotf({
-						...notf,
-					});
-
-					backEnd.access.can = "asdasd";
-					backEnd.access.wait = false;
-					backEnd.access.pass = "";
-					setBackEnd({ ...backEnd });
-				}, 1000);
-			}
-		});
+	useEffect(() => {
+		app.on("access-exists", (data) => _exists(data));
+		app.on("access-create", (data) => _create(data));
+		app.on("access-enter", (data) => _enter(data));
 
 		app.send("access-exists", null);
 	}, []);

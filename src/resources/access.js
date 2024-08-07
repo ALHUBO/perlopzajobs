@@ -9,6 +9,8 @@
  * !--------------------------------------------------------------------------------------------
  * **/
 
+const native = require("./native");
+
 //var>------------------------------------------------------------------$ Globales del access.js
 
 var encrypt = null, //?---Rekiem externo
@@ -47,7 +49,11 @@ const _create = (pass) => {
 		encrypt
 			.genCifer(pass)
 			.then((cifer) => {
-				file.write("./dtx", "access.ahb", encrypt.CiferSMS(pass, cifer))
+				file.write(
+					"./dtx",
+					"access.ahb",
+					native.hex2codexBin(encrypt.CiferSMS(pass, cifer))
+				)
 					.then(() => {
 						resolve(true);
 					})
@@ -70,45 +76,50 @@ const _create = (pass) => {
 };
 
 const _enter = (pass) => {
-	if (typeof pass != "string" || pass == "") {
-		reject({
-			error: new Error(
-				"The password received by the access controller is not of type [string]"
-			),
-			message: "The password entered is not in a valid format.",
-		});
-		return;
-	}
-	encrypt
-		.genCifer(pass)
-		.then((cifer) => {
-			file.read("./dtx/access.ahb")
-				.then((data) => {
-					const sms = encrypt.DeciferSMS(data, cifer);
-					if (sms == pass) resolve(true);
-					else
-						reject({
-							error: new Error(
-								"The password does not match the one stored internally."
-							),
-							message: "A failed login attempt occurred.",
-						});
-				})
-				.catch((e) => {
-					reject({
-						error: e,
-						message:
-							"An error occurred while trying to read the password.",
-					});
-				});
-		})
-		.catch((e) => {
+	return new Promise((resolve, reject) => {
+		if (typeof pass != "string" || pass == "") {
 			reject({
-				error: e,
-				message:
-					"An error occurred while trying to decrypt the password.",
+				error: new Error(
+					"The password received by the access controller is not of type [string]"
+				),
+				message: "The password entered is not in a valid format.",
 			});
-		});
+			return;
+		}
+		encrypt
+			.genCifer(pass)
+			.then((cifer) => {
+				file.read("./dtx/access.ahb")
+					.then((data) => {
+						const sms = encrypt.DeciferSMS(
+							native.codexBin2hex(data),
+							cifer
+						);
+						if (sms == pass) resolve(true);
+						else
+							reject({
+								error: new Error(
+									"The password does not match the one stored internally."
+								),
+								message: "A failed login attempt occurred.",
+							});
+					})
+					.catch((e) => {
+						reject({
+							error: e,
+							message:
+								"An error occurred while trying to read the password.",
+						});
+					});
+			})
+			.catch((e) => {
+				reject({
+					error: e,
+					message:
+						"An error occurred while trying to decrypt the password.",
+				});
+			});
+	});
 };
 
 //$--------------------------------------------------------------------------Funciones Front-End
