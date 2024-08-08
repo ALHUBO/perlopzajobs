@@ -340,6 +340,13 @@ const _nicGet = () => {
 	}
 	send("nic-get", int);
 };
+const _screenSize = () => {
+	const primaryDisplay = screen.getPrimaryDisplay();
+	const { width, height } = primaryDisplay.workAreaSize;
+	wind.dimention.h = height;
+	wind.dimention.w = width;
+	return { width, height };
+};
 
 /**
  * %--------------------------------[ GUI_Call_Window(void):void ]
@@ -355,11 +362,7 @@ const GUI_Call_Window = () => {
 
 	//$-----------------------> GUI obtiene ancho y alto de la window
 	on("app-screen-size", (e, data) => {
-		const primaryDisplay = screen.getPrimaryDisplay();
-		const { width, height } = primaryDisplay.workAreaSize;
-		wind.dimention.h = height;
-		wind.dimention.w = width;
-		send("app-screen-size", { width, height });
+		send("app-screen-size", _screenSize());
 	});
 
 	//$-----------------------> GUI llama para maximizar o restaurar window
@@ -489,6 +492,7 @@ const utilities = {
 	log,
 	config,
 	regExp,
+	screenSize: _screenSize,
 };
 
 //export------------------------> Funciones disponible hacia el exterior

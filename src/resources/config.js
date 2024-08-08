@@ -12,33 +12,48 @@
 const native = require("./native");
 
 //var>------------------------------------------------------------------$ Globales del config.js
-var backConfig = {
-	ip: "",
-	udp: {
-		stablished: false,
-		auto: false,
-		data: {
-			port: { E: 56789, S: 56790 },
+var supaConfig = {
+	gui: {
+		title: "ALHUBOSoft",
+		lang: {
+			act: "noneLang",
+			list: {},
+		},
+		theme: { mode: "system", dark: false },
+		screen: {
+			width: 100,
+			height: 100,
+			full: false,
+			maximize: false,
 		},
 	},
-	ws: { stablished: false, auto: false, data: { port: 3000 } },
-	db: {
-		stablished: false,
-		auto: false,
-		data: {
-			ip: "localhost",
-			port: 3306,
-			user: "root",
-			pass: "",
-			db: "PerlopzaJobs",
-			driver: "",
-		},
+	console: {
+		open: false,
+		noview: 0,
+		content: {},
 	},
-	access: {
-		exists: null,
-		can: false,
-		wait: false,
-		pass: "",
+	server: {
+		ip: "",
+		udp: {
+			stablished: false,
+			auto: false,
+			data: {
+				port: { E: 56789, S: 56790 },
+			},
+		},
+		ws: { stablished: false, auto: false, data: { port: 3000 } },
+		db: {
+			stablished: false,
+			auto: false,
+			data: {
+				ip: "localhost",
+				port: 3306,
+				user: "root",
+				pass: "",
+				db: "PerlopzaJobs",
+				driver: "",
+			},
+		},
 	},
 };
 
@@ -62,7 +77,7 @@ const _exists = () => {
 
 const _save = ({ config, shifer }) => {
 	return new Promise((resolve, reject) => {
-		backConfig = { ...config };
+		supaConfig = { ...config };
 		let pass =
 			shifer === null ? encrypt.ASCII2sha256(native.timestamp()) : shifer;
 		encrypt
@@ -73,7 +88,7 @@ const _save = ({ config, shifer }) => {
 					"conf.ahb",
 					native.hex2codexBin(
 						encrypt.CiferSMS(
-							btoa(JSON.stringify(backConfig)),
+							btoa(JSON.stringify(supaConfig)),
 							cifer
 						)
 					)
@@ -105,7 +120,7 @@ const _load = (shifer) => {
 			.then((ex) => {
 				if (ex) {
 					if (typeof shifer != "string" || shifer == "") {
-						resolve({ ...backConfig });
+						resolve({ ...supaConfig });
 						return;
 					}
 					encrypt
@@ -113,7 +128,7 @@ const _load = (shifer) => {
 						.then((cifer) => {
 							file.read("./dtx/conf.ahb")
 								.then((data) => {
-									backConfig = JSON.parse(
+									supaConfig = JSON.parse(
 										atob(
 											encrypt.DeciferSMS(
 												native.codexBin2hex(data),
@@ -121,7 +136,11 @@ const _load = (shifer) => {
 											)
 										)
 									);
-									resolve({ ...backConfig });
+									supaConfig.udp.stablished = false;
+									supaConfig.ws.stablished = false;
+									supaConfig.db.stablished = false;
+									supaConfig.access.can = false;
+									resolve({ ...supaConfig });
 								})
 								.catch((e) => {
 									reject({
@@ -138,7 +157,7 @@ const _load = (shifer) => {
 									"An error occurred while trying to decrypt the configuration.",
 							});
 						});
-				} else resolve({ ...backConfig });
+				} else resolve({ ...supaConfig });
 			})
 			.catch((e) => {
 				reject({
@@ -148,6 +167,16 @@ const _load = (shifer) => {
 				});
 			});
 	});
+};
+
+const _get = (prop) => {
+	if (
+		typeof prop == "string" &&
+		prop != "" &&
+		typeof supaConfig[prop] != "undefined"
+	)
+		return { ...supaConfig[prop] };
+	else return { ...supaConfig };
 };
 
 //$--------------------------------------------------------------------------Funciones Front-End
@@ -160,7 +189,7 @@ const save = (responde) => {
 				content: "Saving configuration.",
 			});
 			win.send("config-save", {
-				error: false,
+				ok: true,
 				sms: shifer,
 			});
 		})
@@ -181,32 +210,15 @@ const save = (responde) => {
 const load = (shifer) => {
 	_load(shifer)
 		.then((daconfig) => {
-			access
-				.exists()
-				.then((r) => {
-					daconfig.access.exists = r;
-					win.log.success({
-						icon: "settings",
-						title: "Configuration",
-						content: "Configuration loaded.",
-					});
-					win.send("config-load", {
-						error: false,
-						sms: { ...daconfig },
-					});
-				})
-				.catch((e) => {
-					win.log.error({
-						icon: "settings",
-						title: "Configuration",
-						content: e.message,
-						advanced: e.error,
-					});
-					win.send("config-load", {
-						error: true,
-						sms: e.message,
-					});
-				});
+			win.log.success({
+				icon: "settings",
+				title: "Configuration",
+				content: "Configuration loaded.",
+			});
+			win.send("config-load", {
+				ok: true,
+				sms: { ...daconfig },
+			});
 		})
 		.catch((e) => {
 			win.log.error({
@@ -264,6 +276,13 @@ const udpSave = (responde) => {
 		});
 };
 
+const _safeareaGet = () => {
+	let size = win.screenSize();
+	supaConfig.gui.screen.height = size.height;
+	supaConfig.gui.screen.width = size.width;
+	return supaConfig.gui.screen.height * 0.04;
+};
+
 //export--------------------------------------------------------------------------> Desde la GUI
 const listeners = () => {
 	encrypt = global.encrypt;
@@ -271,16 +290,37 @@ const listeners = () => {
 	win = global.window.utilities;
 	access = global.access.utilities;
 
-	win.on("config-save", (e, data) => save(data));
 	win.on("config-load", (e, data) => load(data));
+	win.on("config-save", (e, data) => save(data));
+	win.on("config-get", (e, data) =>
+		win.send("config-get", { prop: data, data: _get(data) })
+	);
+
+	win.on("conf-safearea-get", (e, data) =>
+		win.send("conf-safearea-get", _safeareaGet())
+	);
+
+	win.on("conf-title-set", (e, data) => {
+		supaConfig.gui.title = data;
+		win.send("conf-title-get", data);
+	});
+
+	win.on("conf-title-get", (e, data) =>
+		win.send("conf-title-get", supaConfig.gui.title)
+	);
 	win.on("config-ip-save", (e, data) => ipSave(data));
 	win.on("config-udp-save", (e, data) => udpSave(data));
+	win.on("config-get", () => {
+		win.send("config-get", { ...supaConfig });
+	});
 };
 
 //export-------------------------------------------------------------------->Funciones expuestas
 const utilities = {
+	load: _load,
 	save: _save,
 	exists: _exists,
+	get: _get,
 };
 
 module.exports = {

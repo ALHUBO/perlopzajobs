@@ -16,11 +16,6 @@ export default function Udp({ backEnd, setBackEnd }) {
 		E: "",
 		S: "",
 	});
-	const restablish = () => {
-		port.E = backEnd.udp.portE;
-		port.S = backEnd.udp.portS;
-		setPort({ ...port });
-	};
 	const saveAs = () => {
 		if (!native.isPort(port.E)) port.E = 56789;
 		if (!native.isPort(port.S)) port.S = 56790;
@@ -67,6 +62,8 @@ export default function Udp({ backEnd, setBackEnd }) {
 		}
 
 		setSaving((saving = true));
+		backEnd.udp.data.port.E = port.E;
+		backEnd.udp.data.port.S = port.S;
 		app.send("config-udp-save", {
 			config: { ...backEnd },
 			shifer: localStorage.getItem("config.shifer"),
@@ -74,32 +71,30 @@ export default function Udp({ backEnd, setBackEnd }) {
 	};
 
 	const saved = (response) => {
-		restablish();
-		backEnd.udp.portE = parseInt(response.portE);
-		backEnd.udp.portS = parseInt(response.portS);
-		setBackEnd({ ...backEnd });
-		restablish();
-		setSaving((saving = false));
-		setEditing((editing = false));
-		setNotif({
-			type: 0,
-			ico: "",
-			sms: "Se guardó correctamente!",
-		});
-		setTimeout(() => {
+		if (response) {
+			setSaving((saving = false));
+			setEditing((editing = false));
 			setNotif({
-				...notif,
-				sms: "",
+				type: 0,
+				ico: "",
+				sms: "Se guardó correctamente!",
 			});
-		}, 2000);
+			setTimeout(() => {
+				setNotif({
+					...notif,
+					sms: "",
+				});
+			}, 2000);
+		} else
+			setNotif({
+				type: 2,
+				ico: "",
+				sms: "Ocurrio un error!",
+			});
 	};
 
 	useEffect(() => {
-		restablish();
-		app.on("udp-save", (response) => {
-			console.log("response");
-			saved(response);
-		});
+		app.on("config-udp-save", (response) => saved(response));
 		setPort({
 			E: backEnd.udp.data.port.E,
 			S: backEnd.udp.data.port.S,

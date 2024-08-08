@@ -15,7 +15,12 @@ const native = require("./native");
 
 var encrypt = null, //?---Rekiem externo
 	file = null, //?---Rekiem externo
-	win = null; //?---Funciones utiles de window
+	win = null, //?---Funciones utiles de window
+	conf = null, //?---Configuracion del software
+	access = {
+		exists: null,
+		can: false,
+	};
 
 //!___________________________________________________________________________Funciones Back-End
 const _exists = () => {
@@ -26,6 +31,24 @@ const _exists = () => {
 			})
 			.catch((e) => {
 				resolve(false);
+			});
+	});
+};
+
+const _load = () => {
+	return new Promise((resolve, reject) => {
+		let fnoc = { ...access };
+		_exists()
+			.then((ex) => {
+				fnoc.exists = ex;
+				resolve(fnoc);
+			})
+			.catch((e) => {
+				reject({
+					error: e,
+					message:
+						"An error occurred while trying to find the access key.",
+				});
 			});
 	});
 };
@@ -154,6 +177,27 @@ const exists = () => {
 		});
 };
 
+const load = () => {
+	_load()
+		.then((response) => {
+			win.log.success({
+				icon: "key",
+				title: "Access",
+				content: "An access key was found.",
+			});
+			win.send("access-load", response);
+		})
+		.catch((e) => {
+			win.log.error({
+				icon: "key",
+				title: "Access",
+				content: e.message,
+				advanced: e.error,
+			});
+			win.send("access-load", { error: true });
+		});
+};
+
 const create = (pass) => {
 	_create(pass)
 		.then(() => {
@@ -201,6 +245,9 @@ const listeners = () => {
 	encrypt = global.encrypt;
 	file = global.file.utilities;
 	win = global.window.utilities;
+	conf = global.config.utilities;
+
+	win.on("access-load", (e, data) => load());
 
 	win.on("access-exists", (e, data) => exists());
 

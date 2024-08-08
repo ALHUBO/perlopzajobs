@@ -12,63 +12,15 @@ import Bartitle from "./Bartitle/main";
 import Workspace from "./Workspace/main";
 import Icon from "../components/Icon";
 import Console from "./Console/main";
+import ErrorPegi from "./ErrorPegi/main";
 
 export default function Layout({ children }) {
-	let [erConf, setErConf] = useState("");
+	const [erConf, setErConf] = useState(null);
+	const [loaded, setLoaded] = useState(false);
+
 	const childs = Children.toArray(children).filter((child) =>
 		isValidElement(child)
 	);
-
-	let [frontEnd, setFrontEnd] = useState({
-		title: "ALHUBOSoft",
-		lang: {
-			act: "noneLang",
-			list: {},
-		},
-		theme: { mode: "system", dark: false },
-		screen: {
-			width: 100,
-			height: 100,
-			full: false,
-			maximize: false,
-			hbartitle: 4,
-		},
-		console: {
-			open: false,
-			noview: 0,
-			content: {},
-		},
-	});
-
-	const [backEnd, setBackEnd] = useState({
-		ip: "",
-		udp: {
-			stablished: false,
-			auto: false,
-			data: {
-				port: { E: 56789, S: 56790 },
-			},
-		},
-		ws: { stablished: false, auto: false, data: { port: 3000 } },
-		db: {
-			stablished: false,
-			auto: false,
-			data: {
-				ip: "localhost",
-				port: 3306,
-				user: "root",
-				pass: "",
-				db: "PerlopzaJobs",
-				driver: "",
-			},
-		},
-		access: {
-			exists: null,
-			can: false,
-			pass: "",
-			wait: false,
-		},
-	});
 
 	const toggleThemeMode = () => {
 		let ch = "system";
@@ -102,104 +54,49 @@ export default function Layout({ children }) {
 		let dbc = localStorage.getItem("config.db");
 	};
 
-	const canAccess = () => {
-		if (typeof backEnd.access.exists == "boolean")
-			if (backEnd.access.exists)
-				if (
-					typeof backEnd.access.can == "string" &&
-					backEnd.access.can != ""
-				)
-					return 0; //?---Tiene acceso
-				else return 1;
-			//?---Cargó pero no tiene acceso
-			else return 2; //?---Cargó pero no existe archivo acceso
-
-		return 3; //?---Esta Cargando archivo acceso
-	};
-
 	//!---------------------------[ Despues de cargar el DOM ]------------------------------
 	useEffect(() => {
 		app.on("config-load", (response) => {
-			if (response.error) {
-				setErConf((erConf = response.sms));
-			} else setBackEnd({ ...response.sms });
+			if (response.ok) setLoaded(true);
+			else setErConf(response.sms);
 		});
-
 		app.on("config-save", (response) => {
-			if (!response.error) {
+			if (response.ok) {
 				localStorage.setItem("config.shifer", response.sms);
-				setBackEnd({ ...backEnd });
-			} else console.log(response);
+			} else setErConf(response.sms);
 		});
 
 		app.send("config-load", localStorage.getItem("config.shifer"));
+		app.send("config-safearea-get", null);
 	}, []);
 
 	return (
 		<Fragment>
-			<Bartitle
-				height={frontEnd.screen.hbartitle}
-				frontEnd={frontEnd}
-				setFrontEnd={setFrontEnd}
-				backEnd={backEnd}
-				setBackEnd={setBackEnd}
-				canAccess={canAccess}
-			/>
-			{erConf == "" ? (
+			<Bartitle />
+			{typeof erConf == "string" ? (
+				<ErrorPegi title="Configuration error" error={erConf} />
+			) : loaded ? (
 				<>
-					<Access
-						canAccess={canAccess}
-						frontEnd={frontEnd}
-						setFrontEnd={setFrontEnd}
-						backEnd={backEnd}
-						setBackEnd={setBackEnd}
-					/>
-					<Workspace
-						canAccess={canAccess}
-						frontEnd={frontEnd}
-						setFrontEnd={setFrontEnd}
-						backEnd={backEnd}
-						setBackEnd={setBackEnd}
-					>
+					<Access />
+					{/* <Workspace>
 						{childs.map((child, index) =>
 							cloneElement(child, {
 								key: index,
-								frontEnd,
-								setFrontEnd,
-								backEnd,
-								setBackEnd,
 							})
 						)}
-					</Workspace>
+					</Workspace> */}
 				</>
 			) : (
-				<>
-					<div
-						className="flex justify-center items-center flex-col"
-						style={{
-							height: frontEnd.console.open
-								? "0px"
-								: "calc(100vh - " +
-								  frontEnd.screen.hbartitle * 2 +
-								  "px)",
-						}}
-					>
-						<div className="text-9xl text-red-700">
-							<Icon id="code_blocks" />
-						</div>
-						<div className="font-bold text-3xl text-slate-700">
-							Error en configuración
-						</div>
-						<div className="text-lg text-slate-500 px-[20%]">
-							{erConf}
-						</div>
+				<div
+					className="flex justify-center items-center flex-col gap-12 text-slate-600"
+					style={{ height: "100vh" }}
+				>
+					<div className="flex justify-center items-center gap-1 text-3xl">
+						Cargando configuracion...
+						<Icon id="autorenew" />
 					</div>
-					<Console
-						safeArea={frontEnd.screen.hbartitle}
-						frontEnd={frontEnd}
-						setFrontEnd={setFrontEnd}
-					/>
-				</>
+					<div className="loader"></div>
+				</div>
 			)}
 		</Fragment>
 	);

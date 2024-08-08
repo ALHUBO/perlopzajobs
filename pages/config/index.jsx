@@ -1,9 +1,13 @@
+import { useEffect } from "react";
 import Database from "./component/database";
 import Nic from "./component/Nic";
 import Udp from "./component/udp";
 import Websocket from "./component/websocket";
 
 export default function Config({ frontEnd, setFrontEnd, backEnd, setBackEnd }) {
+	useEffect(() => {
+		console.log(backEnd);
+	}, []);
 	return (
 		<div>
 			<div>Configuracion</div>

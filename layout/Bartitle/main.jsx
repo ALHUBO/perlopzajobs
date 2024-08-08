@@ -1,49 +1,101 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Icon from "../../components/Icon";
 import Link from "next/link";
 
-export default function Bartitle({
-	height = 0,
-	frontEnd,
-	setFrontEnd,
-	canAccess,
-	backEnd,
-	setBackEnd,
-}) {
+export default function Bartitle({}) {
+	//!----------------> SafeArea
+	const [safeArea, setSafeArea] = useState(0);
+	useEffect(() => {
+		app.on("conf-safearea-get", (response) => {
+			setSafeArea(response);
+		});
+
+		app.send("conf-safearea-get", null);
+	}, []);
+
+	//!----------------> SafeArea
+	const [title, setTitlx] = useState("");
+	useEffect(() => {
+		app.on("conf-title-get", (response) => {
+			setTitlx(response);
+		});
+
+		app.send("conf-title-get", null);
+	}, []);
+
+	//!----------------> SafeArea
+	const [gui, setGui] = useState({
+		title: "ALHUBOSoft",
+		lang: {
+			act: "noneLang",
+			list: {},
+		},
+		theme: { mode: "system", dark: false },
+		screen: {
+			width: 100,
+			height: 100,
+			full: false,
+			maximize: false,
+		},
+	});
+	useEffect(() => {
+		app.on("config-get", (response) => {
+			if (response.prop == "gui") setGui({ ...response.data });
+		});
+		app.send("config-get", "gui");
+	}, []);
+
+	//!----------------> Cargar Estado Access
+	const [Caccess, setCaccess] = useState(null);
+	useEffect(() => {
+		app.on("access-load", (response) => {
+			setCaccess({ ...response });
+		});
+		app.on("access-save", (response) => {
+			if (response.ok) setCaccess({ ...response.data });
+		});
+		app.send("access-load", null);
+	}, []);
+
+	//!----------------> Utilidades externas
+	const setTitle = (title) => {
+		app.send("conf-title-set", title);
+	};
+
 	const logOut = () => {
-		backEnd.title = "Ingresar Contraseña";
-		backEnd.access.can = false;
+		setTitle("Ingresar Contraseña");
+		Caccess.can = false;
 		app.send("log-info", {
 			icon: "logout",
 			title: "Log out",
 			content: "The session has been closed by the user.",
 		});
-		setBackEnd({ ...backEnd });
+		app.send("access-save", { ...Caccess });
 	};
-	useEffect(() => {
-		if (frontEnd.theme.dark) document.body.classList.add("dark");
-		else document.body.classList.remove("dark");
-	}, [frontEnd]);
+	// useEffect(() => {
+	// 	if (frontEnd.theme.dark) document.body.classList.add("dark");
+	// 	else document.body.classList.remove("dark");
+	// }, [frontEnd]);
 
 	useEffect(() => {
 		app.on("app-screen-size", (data) => {
-			frontEnd.screen.width = data.width;
-			frontEnd.screen.height = data.height;
-			frontEnd.screen.hbartitle = frontEnd.screen.height * 0.04;
-			setFrontEnd(frontEnd);
+			// frontEnd.screen.width = data.width;
+			// frontEnd.screen.height = data.height;
+			// frontEnd.screen.hbartitle = frontEnd.screen.height * 0.04;
+			// setFrontEnd(frontEnd);
 		});
 		app.on("app-screen-maximize", (data) => {
-			frontEnd.screen.maximize = data;
-			setFrontEnd({ ...frontEnd });
+			// frontEnd.screen.maximize = data;
+			// setFrontEnd({ ...frontEnd });
 		});
 		app.on("app-screen-full", (data) => {
-			frontEnd.screen.full = data;
-			setFrontEnd({ ...frontEnd });
+			// frontEnd.screen.full = data;
+			// setFrontEnd({ ...frontEnd });
 		});
 		app.on("nativetheme-update", (data) => {
-			frontEnd.theme.mode = data.type;
-			frontEnd.theme.dark = data.dark;
-			setFrontEnd({ ...frontEnd });
+			// frontEnd.theme.mode = data.type;
+			// frontEnd.theme.dark = data.dark;
+			// setFrontEnd({ ...frontEnd });
 		});
 
 		app.send("app-screen-size", null);
@@ -54,7 +106,7 @@ export default function Bartitle({
 				"relative z-[1000] w-[100vw] bg-slate-700 grid text-slate-100"
 			}
 			style={{
-				height: height + "px",
+				height: safeArea + "px",
 				WebkitAppRegion: "drag",
 				gridTemplateColumns: "2fr 3fr 1fr",
 			}}
@@ -63,10 +115,10 @@ export default function Bartitle({
 				className="flex justify-start items-center overflow-ellipsis pl-2 gap-2"
 				style={{
 					WebkitAppRegion: "no-drag",
-					fontSize: `${frontEnd.screen.hbartitle * 0.5}px`,
+					fontSize: `${safeArea * 0.5}px`,
 				}}
 			>
-				{canAccess() == 0 && (
+				{Caccess?.exists && Caccess?.can && (
 					<>
 						<div className="group">
 							<Link
@@ -79,22 +131,20 @@ export default function Bartitle({
 								<div
 									className="bg-slate-700 w-32"
 									style={{
-										height: `${
-											frontEnd.screen.hbartitle * 0.05
-										}px`,
+										height: `${safeArea * 0.05}px`,
 									}}
 								></div>
 								<div
 									className="bg-slate-100 w-32 h-32 border-slate-700 border-2 rounded-b-lg overflow-hidden"
 									style={{
-										height: `${frontEnd.screen.hbartitle}px`,
+										height: `${safeArea}px`,
 									}}
 								>
 									<button
 										className="flex justify-start items-center hover:bg-slate-700 w-full hover:text-white px-2 gap-1"
 										onClick={logOut}
 										style={{
-											height: `${frontEnd.screen.hbartitle}px`,
+											height: `${safeArea}px`,
 										}}
 									>
 										<Icon id="logout" />
@@ -116,20 +166,20 @@ export default function Bartitle({
 				<div
 					className="flex items-center justify-center border-[0.2vmin] w-[100%] rounded overflow-hidden text-ellipsis"
 					style={{
-						height: height * 0.7 + "px",
-						fontSize: height * 0.5 + "px",
+						height: safeArea * 0.7 + "px",
+						fontSize: safeArea * 0.5 + "px",
 					}}
 				>
-					{frontEnd.title}
+					{title}
 				</div>
 			</div>
 			<div className="flex justify-end items-center ">
 				<button
 					className="cursor-pointer hover:bg-[#ffffff57] flex items-center justify-center duration-300"
 					style={{
-						width: height * 1.4 + "px",
-						height: height + "px",
-						fontSize: height + "px",
+						width: safeArea * 1.4 + "px",
+						height: safeArea + "px",
+						fontSize: safeArea + "px",
 						WebkitAppRegion: "no-drag",
 					}}
 					onClick={() => {
@@ -138,23 +188,23 @@ export default function Bartitle({
 				>
 					<Icon id="minimize" />
 				</button>
-				{!frontEnd.screen.full ? (
+				{!gui.screen.full ? (
 					<button
 						className="cursor-pointer hover:bg-[#ffffff57] flex items-center justify-center duration-300"
 						style={{
-							width: height * 1.4 + "px",
-							height: height + "px",
+							width: safeArea * 1.4 + "px",
+							height: safeArea + "px",
 							WebkitAppRegion: "no-drag",
 						}}
 						onClick={() => {
-							app.send("app-maximize", !frontEnd.screen.maximize);
+							app.send("app-maximize", !gui.screen.maximize);
 						}}
 					>
-						{frontEnd.screen.maximize ? (
+						{gui.screen.maximize ? (
 							<Icon
 								id="select_window_2"
 								style={{
-									fontSize: height * 0.8 + "px",
+									fontSize: safeArea * 0.8 + "px",
 								}}
 							/>
 						) : (
@@ -165,16 +215,16 @@ export default function Bartitle({
 				<button
 					className="cursor-pointer hover:bg-[#0084c3] flex items-center justify-center duration-300"
 					style={{
-						width: height * 1.4 + "px",
-						height: height + "px",
-						fontSize: height + "px",
+						width: safeArea * 1.4 + "px",
+						height: safeArea + "px",
+						fontSize: safeArea + "px",
 						WebkitAppRegion: "no-drag",
 					}}
 					onClick={() => {
-						app.send("app-fullscreen", !frontEnd.screen.full);
+						app.send("app-fullscreen", !gui.screen.full);
 					}}
 				>
-					{frontEnd.screen.full ? (
+					{gui.screen.full ? (
 						<Icon id="fullscreen_exit" />
 					) : (
 						<Icon id="fullscreen" />
@@ -183,9 +233,9 @@ export default function Bartitle({
 				<button
 					className="cursor-pointer hover:bg-[#e50000] flex items-center justify-center duration-300"
 					style={{
-						width: height * 1.4 + "px",
-						height: height + "px",
-						fontSize: height + "px",
+						width: safeArea * 1.4 + "px",
+						height: safeArea + "px",
+						fontSize: safeArea + "px",
 						WebkitAppRegion: "no-drag",
 					}}
 					onClick={() => {
